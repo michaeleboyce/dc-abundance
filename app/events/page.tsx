@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { Container } from '@/components/ui/Container';
 import { EventCard } from '@/components/events/EventCard';
 import { getUpcomingEvents } from '@/lib/actions/events';
@@ -47,12 +48,20 @@ export default async function EventsPage() {
 
   return (
     <>
-      <section className="py-16 lg:py-24 bg-primary-900">
-        <Container>
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-white">
+      <section className="relative h-[50vh] min-h-[400px] flex items-end">
+        <Image
+          src="/images/fourth-of-july-fireworks.jpg"
+          alt="Fourth of July fireworks over the Washington Monument"
+          fill
+          priority
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
+        <Container className="relative z-10 pb-12">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white">
             Upcoming Events
           </h1>
-          <p className="mt-6 text-xl text-neutral-200 max-w-2xl">
+          <p className="mt-4 text-xl text-neutral-200 max-w-2xl">
             Join us at our next meetup or event. Connect with others who share your vision
             for a more abundant DC.
           </p>

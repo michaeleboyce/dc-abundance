@@ -11,17 +11,23 @@ export default function AboutPage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative py-20 lg:py-28 bg-primary-900">
-        <Container>
-          <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white">
-              About DC Abundance
-            </h1>
-            <p className="mt-6 text-xl text-neutral-200 leading-relaxed">
-              A cross-partisan coalition working to make our capital more affordable,
-              prosperous, and livable for everyone.
-            </p>
-          </div>
+      <section className="relative h-[50vh] min-h-[400px] flex items-end">
+        <Image
+          src="/images/eastern-market.jpg"
+          alt="Eastern Market in Washington DC with vendors and shoppers"
+          fill
+          priority
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
+        <Container className="relative z-10 pb-12">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white">
+            About DC Abundance
+          </h1>
+          <p className="mt-4 text-xl text-neutral-200 leading-relaxed max-w-2xl">
+            A cross-partisan coalition working to make our capital more affordable,
+            prosperous, and livable for everyone.
+          </p>
         </Container>
       </section>
 

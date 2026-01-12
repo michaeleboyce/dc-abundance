@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { Container } from '@/components/ui/Container';
 import { ContactForm } from '@/components/forms/ContactForm';
 import { Mail, MapPin } from 'lucide-react';
@@ -12,16 +13,22 @@ export default function ContactPage() {
   return (
     <>
       {/* Hero */}
-      <section className="py-16 lg:py-24 bg-primary-900">
-        <Container>
-          <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white">
-              Get in Touch
-            </h1>
-            <p className="mt-6 text-xl text-neutral-200 leading-relaxed">
-              Have a question, idea, or want to get involved? We'd love to hear from you.
-            </p>
-          </div>
+      <section className="relative h-[40vh] min-h-[320px] flex items-end">
+        <Image
+          src="/images/u-street-neighborhood.jpg"
+          alt="U Street neighborhood in Washington DC with Ben's Chili Bowl and street murals"
+          fill
+          priority
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
+        <Container className="relative z-10 pb-10">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white">
+            Get in Touch
+          </h1>
+          <p className="mt-4 text-xl text-neutral-200 leading-relaxed max-w-2xl">
+            Have a question, idea, or want to get involved? We'd love to hear from you.
+          </p>
         </Container>
       </section>
 
