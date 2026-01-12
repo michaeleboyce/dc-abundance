@@ -154,41 +154,44 @@ export async function registerForEvent(
   }
 
   try {
-    // Get the event (outside transaction - read-only setup)
-    const eventResult = await db
-      .select()
-      .from(events)
-      .where(eq(events.id, eventId))
-      .limit(1);
-
-    if (!eventResult[0]) {
-      return {
-        success: false,
-        message: "Event not found.",
-      };
-    }
-
-    const event = eventResult[0];
-
-    // Validate event is open for registration
-    if (event.status !== 'published') {
-      return {
-        success: false,
-        message: "Registration is not open for this event.",
-      };
-    }
-
-    if (new Date(event.eventDate) < new Date()) {
-      return {
-        success: false,
-        message: "This event has already occurred.",
-      };
-    }
-
     // Use transaction with row locking to prevent race conditions
+    // All validation happens INSIDE the transaction after acquiring the lock
     const result = await db.transaction(async (tx) => {
-      // Lock the event row to prevent concurrent registration modifications
-      await tx.execute(sql`SELECT id FROM events WHERE id = ${eventId} FOR UPDATE`);
+      // Lock and fetch the event row atomically - prevents TOCTOU race conditions
+      const eventRows = await tx.execute(
+        sql`SELECT * FROM events WHERE id = ${eventId} FOR UPDATE`
+      );
+      const eventRow = eventRows.rows[0] as {
+        id: number;
+        slug: string;
+        title: string;
+        description: string;
+        short_description: string | null;
+        event_date: Date;
+        location: string;
+        location_address: string | null;
+        max_attendees: number;
+        status: 'draft' | 'published' | 'cancelled';
+        owner_email: string;
+        show_owner_email: boolean;
+        series_id: string | null;
+        recurrence_type: 'weekly' | 'monthly' | null;
+        created_at: Date;
+        updated_at: Date;
+      } | undefined;
+
+      if (!eventRow) {
+        return { error: "Event not found." };
+      }
+
+      // Validate event is open for registration INSIDE transaction with lock held
+      if (eventRow.status !== 'published') {
+        return { error: "Registration is not open for this event." };
+      }
+
+      if (new Date(eventRow.event_date) < new Date()) {
+        return { error: "This event has already occurred." };
+      }
 
       // Check if already registered (within transaction)
       const existingRegistration = await tx
@@ -229,7 +232,7 @@ export async function registerForEvent(
         );
 
       const currentCount = confirmedCount?.count || 0;
-      const isFull = currentCount >= event.maxAttendees;
+      const isFull = currentCount >= eventRow.max_attendees;
       const status = isFull ? 'waitlisted' : 'confirmed';
 
       // Get waitlist position if needed (within same transaction)
@@ -286,8 +289,22 @@ export async function registerForEvent(
         waitlistPosition,
         registration,
         isExisting: false,
+        // Include event data for email sending outside transaction
+        event: {
+          title: eventRow.title,
+          eventDate: new Date(eventRow.event_date),
+          location: eventRow.location,
+        },
       };
     });
+
+    // Handle error responses from transaction
+    if ('error' in result && result.error) {
+      return {
+        success: false,
+        message: result.error,
+      };
+    }
 
     // If already registered (not cancelled), return early
     if (result.isExisting) {
@@ -298,8 +315,16 @@ export async function registerForEvent(
       };
     }
 
+    // At this point we have a successful new registration with event data
+    if (!result.event) {
+      return {
+        success: false,
+        message: "Something went wrong. Please try again later.",
+      };
+    }
+
     // Format date for email (outside transaction)
-    const eventDate = event.eventDate.toLocaleDateString('en-US', {
+    const eventDate = result.event.eventDate.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -316,12 +341,12 @@ export async function registerForEvent(
         await resend.emails.send({
           from: FROM_EMAIL,
           to: normalizedEmail,
-          subject: `You're registered: ${event.title}`,
+          subject: `You're registered: ${result.event.title}`,
           react: RegistrationConfirmationEmail({
             firstName,
-            eventTitle: event.title,
+            eventTitle: result.event.title,
             eventDate,
-            location: event.location,
+            location: result.event.location,
             cancelUrl,
           }),
         });
@@ -329,10 +354,10 @@ export async function registerForEvent(
         await resend.emails.send({
           from: FROM_EMAIL,
           to: normalizedEmail,
-          subject: `You're on the waitlist: ${event.title}`,
+          subject: `You're on the waitlist: ${result.event.title}`,
           react: WaitlistConfirmationEmail({
             firstName,
-            eventTitle: event.title,
+            eventTitle: result.event.title,
             eventDate,
             waitlistPosition: result.waitlistPosition!,
             cancelUrl,
@@ -448,8 +473,24 @@ async function registerForSeriesEvents(
       let waitlistedCount = 0;
 
       for (const event of seriesEvents) {
-        // Lock the event row to prevent overbooking
-        await tx.execute(sql`SELECT id FROM events WHERE id = ${event.id} FOR UPDATE`);
+        // Lock and fetch the event row - re-validate status/date inside transaction
+        const lockedEventRows = await tx.execute(
+          sql`SELECT * FROM events WHERE id = ${event.id} FOR UPDATE`
+        );
+        const lockedEvent = lockedEventRows.rows[0] as {
+          id: number;
+          status: string;
+          event_date: Date;
+          max_attendees: number;
+        } | undefined;
+
+        // Re-validate status and date INSIDE transaction with lock held
+        // Skip if event is no longer valid (could have been cancelled/unpublished)
+        if (!lockedEvent ||
+            lockedEvent.status !== 'published' ||
+            new Date(lockedEvent.event_date) < new Date()) {
+          continue;
+        }
 
         // Check if already registered for this specific event (with lock)
         const existingRegRows = await tx.execute(
@@ -479,7 +520,7 @@ async function registerForSeriesEvents(
             )
           );
 
-        const eventIsFull = (currentConfirmed?.count || 0) >= event.maxAttendees;
+        const eventIsFull = (currentConfirmed?.count || 0) >= lockedEvent.max_attendees;
         const status = eventIsFull ? 'waitlisted' : 'confirmed';
 
         let waitlistPosition: number | null = null;

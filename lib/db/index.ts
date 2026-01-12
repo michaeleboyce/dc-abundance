@@ -1,7 +1,9 @@
-import { drizzle } from 'drizzle-orm/neon-http';
-import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import { Pool } from '@neondatabase/serverless';
 import * as schema from './schema';
 
-const sql = neon(process.env.DATABASE_URL!);
+// Use Pool connection for transaction support
+// neon-http driver doesn't support transactions, but Pool with WebSocket does
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-export const db = drizzle(sql, { schema });
+export const db = drizzle(pool, { schema });
