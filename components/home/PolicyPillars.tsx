@@ -12,7 +12,7 @@ const pillars = [
     description: 'More homes in every neighborhood. End exclusionary zoning. Build housing for all income levels.',
     href: '/focus-areas/housing',
     stats: '45%',
-    statsLabel: 'of income spent on rent by average DC renter',
+    statsLabel: 'of DC renters are rent burdened',
   },
   {
     name: 'Transportation',
@@ -21,8 +21,8 @@ const pillars = [
     imageAlt: 'U Street Metro station interior',
     description: 'World-class public transportation. Frequent, reliable Metro service. Better buses and bike infrastructure.',
     href: '/focus-areas/transportation',
-    stats: '40%',
-    statsLabel: 'of Metro riders rely on public transportation',
+    stats: '1 in 3',
+    statsLabel: 'DC residents commute by public transit',
   },
   {
     name: 'Energy',
@@ -51,8 +51,8 @@ const pillars = [
     imageAlt: 'Library of Congress interior representing government institutions',
     description: 'Efficient permitting. Maintained infrastructure. A government that enables progress.',
     href: '/focus-areas/government',
-    stats: '18mo',
-    statsLabel: 'average time to approve a construction permit',
+    stats: '4.5 yrs',
+    statsLabel: 'average federal permitting time',
   },
 ];
 
