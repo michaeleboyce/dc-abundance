@@ -78,9 +78,9 @@ export default function AboutPage() {
                   'More housing means lower prices. More transportation options means less traffic. More clean energy means lower bills. Abundance creates opportunity.',
               },
               {
-                title: 'Process Matters',
+                title: 'Outcomes Over Process',
                 description:
-                  'Good intentions aren\'t enough. We need permitting processes that actually work, regulations that enable rather than block, and government that delivers results.',
+                  'Good intentions aren\'t enough. We need to focus on results, not just procedures. Regulations should enable progress, and government should be judged by what it delivers.',
               },
               {
                 title: 'Everyone Benefits',
