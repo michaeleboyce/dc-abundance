@@ -1,18 +1,18 @@
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
+import { isAdminAuthenticated } from '@/lib/actions/admin-auth';
 
 export default async function AdminDashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const authCookie = cookieStore.get('admin_auth');
+  // Properly verify the session token
+  const isAuthenticated = await isAdminAuthenticated();
 
   // Redirect to login if not authenticated
-  if (!authCookie?.value) {
+  if (!isAuthenticated) {
     redirect('/admin/login');
   }
 

@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { events, eventRegistrations } from "@/lib/db/schema";
-import { eq, and, gt, asc, count, sql, max } from "drizzle-orm";
+import { events, eventRegistrations, seriesRegistrations } from "@/lib/db/schema";
+import { eq, and, gt, asc, count, max } from "drizzle-orm";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { resend, FROM_EMAIL, SITE_URL } from "@/lib/email";
 import { RegistrationConfirmationEmail } from "@/lib/email/templates/registration-confirmation";
@@ -31,7 +31,7 @@ export async function getAllEvents() {
     .orderBy(asc(events.eventDate));
 }
 
-// Get event by slug with registration counts
+// Get event by slug with registration counts and series info
 export async function getEventBySlug(slug: string) {
   const eventResult = await db
     .select()
@@ -53,10 +53,26 @@ export async function getEventBySlug(slug: string) {
       )
     );
 
+  // Get series event count if part of a series
+  let seriesEventCount = 0;
+  if (event.seriesId) {
+    const [seriesCount] = await db
+      .select({ count: count() })
+      .from(events)
+      .where(
+        and(
+          eq(events.seriesId, event.seriesId),
+          gt(events.eventDate, new Date())
+        )
+      );
+    seriesEventCount = seriesCount?.count || 0;
+  }
+
   return {
     ...event,
     confirmedCount: confirmedCount?.count || 0,
     spotsRemaining: event.maxAttendees - (confirmedCount?.count || 0),
+    seriesEventCount,
   };
 }
 
@@ -67,6 +83,8 @@ const registrationSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().optional().or(z.literal("")),
   turnstileToken: z.string().optional(),
+  seriesId: z.string().uuid().optional().or(z.literal("")),
+  registerForSeries: z.enum(["true", "false"]).optional(),
 });
 
 export type RegistrationFormState = {
@@ -90,6 +108,8 @@ export async function registerForEvent(
     firstName: formData.get("firstName"),
     lastName: formData.get("lastName") || "",
     turnstileToken: formData.get("turnstileToken") || "",
+    seriesId: formData.get("seriesId") || "",
+    registerForSeries: formData.get("registerForSeries") || "false",
   };
 
   const validatedFields = registrationSchema.safeParse(rawData);
@@ -102,8 +122,9 @@ export async function registerForEvent(
     };
   }
 
-  const { eventId, email, firstName, lastName, turnstileToken } = validatedFields.data;
+  const { eventId, email, firstName, lastName, turnstileToken, seriesId, registerForSeries } = validatedFields.data;
   const normalizedEmail = email.toLowerCase().trim();
+  const shouldRegisterForSeries = registerForSeries === "true" && seriesId;
 
   // Verify Turnstile token (if configured)
   if (turnstileToken) {
@@ -117,6 +138,11 @@ export async function registerForEvent(
   }
 
   try {
+    // Handle series registration
+    if (shouldRegisterForSeries) {
+      return await registerForSeriesEvents(seriesId, normalizedEmail, firstName, lastName || null);
+    }
+
     // Get the event
     const eventResult = await db
       .select()
@@ -284,4 +310,187 @@ export async function registerForEvent(
       message: "Something went wrong. Please try again later.",
     };
   }
+}
+
+// Helper function to register for all events in a series
+async function registerForSeriesEvents(
+  seriesId: string,
+  email: string,
+  firstName: string,
+  lastName: string | null
+): Promise<RegistrationFormState> {
+  // Check if already registered for series
+  const existingSeriesReg = await db
+    .select()
+    .from(seriesRegistrations)
+    .where(
+      and(
+        eq(seriesRegistrations.seriesId, seriesId),
+        eq(seriesRegistrations.email, email)
+      )
+    )
+    .limit(1);
+
+  if (existingSeriesReg[0] && !existingSeriesReg[0].cancelledAt) {
+    return {
+      success: true,
+      message: "You're already registered for this event series!",
+      status: 'confirmed',
+    };
+  }
+
+  // Get all upcoming events in the series
+  const seriesEvents = await db
+    .select()
+    .from(events)
+    .where(
+      and(
+        eq(events.seriesId, seriesId),
+        gt(events.eventDate, new Date())
+      )
+    )
+    .orderBy(asc(events.eventDate));
+
+  if (seriesEvents.length === 0) {
+    return {
+      success: false,
+      message: "No upcoming events found in this series.",
+    };
+  }
+
+  // Create or update series registration
+  if (existingSeriesReg[0]?.cancelledAt) {
+    await db
+      .update(seriesRegistrations)
+      .set({
+        firstName,
+        lastName,
+        registeredAt: new Date(),
+        cancelledAt: null,
+      })
+      .where(eq(seriesRegistrations.id, existingSeriesReg[0].id));
+  } else {
+    await db.insert(seriesRegistrations).values({
+      seriesId,
+      email,
+      firstName,
+      lastName,
+    });
+  }
+
+  // Register for each event in the series
+  let confirmedCount = 0;
+  let waitlistedCount = 0;
+
+  for (const event of seriesEvents) {
+    // Check if already registered for this specific event
+    const existingReg = await db
+      .select()
+      .from(eventRegistrations)
+      .where(
+        and(
+          eq(eventRegistrations.eventId, event.id),
+          eq(eventRegistrations.email, email)
+        )
+      )
+      .limit(1);
+
+    if (existingReg[0] && existingReg[0].status !== 'cancelled') {
+      if (existingReg[0].status === 'confirmed') confirmedCount++;
+      else waitlistedCount++;
+      continue;
+    }
+
+    // Get current confirmed count for this event
+    const [currentConfirmed] = await db
+      .select({ count: count() })
+      .from(eventRegistrations)
+      .where(
+        and(
+          eq(eventRegistrations.eventId, event.id),
+          eq(eventRegistrations.status, 'confirmed')
+        )
+      );
+
+    const eventIsFull = (currentConfirmed?.count || 0) >= event.maxAttendees;
+    const status = eventIsFull ? 'waitlisted' : 'confirmed';
+
+    let waitlistPosition: number | null = null;
+    if (status === 'waitlisted') {
+      const [maxPos] = await db
+        .select({ maxPos: max(eventRegistrations.waitlistPosition) })
+        .from(eventRegistrations)
+        .where(
+          and(
+            eq(eventRegistrations.eventId, event.id),
+            eq(eventRegistrations.status, 'waitlisted')
+          )
+        );
+      waitlistPosition = (maxPos?.maxPos || 0) + 1;
+    }
+
+    if (existingReg[0]?.status === 'cancelled') {
+      await db
+        .update(eventRegistrations)
+        .set({
+          status,
+          firstName,
+          lastName,
+          registeredAt: new Date(),
+          cancelledAt: null,
+          waitlistPosition,
+        })
+        .where(eq(eventRegistrations.id, existingReg[0].id));
+    } else {
+      await db.insert(eventRegistrations).values({
+        eventId: event.id,
+        email,
+        firstName,
+        lastName,
+        status,
+        waitlistPosition,
+      });
+    }
+
+    if (status === 'confirmed') confirmedCount++;
+    else waitlistedCount++;
+  }
+
+  // Send a single summary email for series registration
+  const firstEvent = seriesEvents[0];
+  try {
+    const eventDate = firstEvent.eventDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `You're registered for ${seriesEvents.length} events: ${firstEvent.title}`,
+      react: RegistrationConfirmationEmail({
+        firstName,
+        eventTitle: `${firstEvent.title} (and ${seriesEvents.length - 1} more)`,
+        eventDate: `Starting ${eventDate}`,
+        location: firstEvent.location,
+        cancelUrl: `${SITE_URL}/events`, // Link to events page for series
+      }),
+    });
+  } catch (emailError) {
+    console.error('Failed to send series email:', emailError);
+  }
+
+  const message = waitlistedCount > 0
+    ? `Registered for ${confirmedCount} events, waitlisted for ${waitlistedCount}. Check your email for details.`
+    : `You're registered for all ${confirmedCount} events! Check your email for confirmation.`;
+
+  return {
+    success: true,
+    message,
+    status: waitlistedCount > 0 ? 'waitlisted' : 'confirmed',
+  };
 }

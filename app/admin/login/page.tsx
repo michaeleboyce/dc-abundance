@@ -1,9 +1,10 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState, useRef } from 'react';
 import { adminLogin, type LoginFormState } from '@/lib/actions/admin-auth';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { Turnstile } from '@/components/ui/Turnstile';
 import { Lock } from 'lucide-react';
 
 const initialState: LoginFormState = {
@@ -13,6 +14,16 @@ const initialState: LoginFormState = {
 
 export default function AdminLoginPage() {
   const [state, formAction, isPending] = useActionState(adminLogin, initialState);
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const handleSubmit = (formData: FormData) => {
+    // Add the turnstile token to the form data
+    if (turnstileToken) {
+      formData.set('turnstileToken', turnstileToken);
+    }
+    formAction(formData);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-50 px-4">
@@ -31,7 +42,7 @@ export default function AdminLoginPage() {
             Enter the admin password to continue.
           </p>
 
-          <form action={formAction} className="space-y-4">
+          <form ref={formRef} action={handleSubmit} className="space-y-4">
             <Input
               name="password"
               type="password"
@@ -39,6 +50,12 @@ export default function AdminLoginPage() {
               placeholder="Enter password"
               required
               error={state.errors?.password?.[0]}
+            />
+
+            <Turnstile
+              onSuccess={setTurnstileToken}
+              onError={() => setTurnstileToken('')}
+              onExpire={() => setTurnstileToken('')}
             />
 
             {state.message && !state.success && (

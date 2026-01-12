@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Container } from '@/components/ui/Container';
 import { EventRegistrationForm } from '@/components/events/EventRegistrationForm';
 import { getEventBySlug } from '@/lib/actions/events';
-import { Calendar, MapPin, Users, ArrowLeft } from 'lucide-react';
+import { Calendar, MapPin, Users, ArrowLeft, Mail, Repeat } from 'lucide-react';
 
 export async function generateMetadata({
   params,
@@ -92,6 +92,20 @@ export default async function EventPage({
                 <span>{event.spotsRemaining} of {event.maxAttendees} spots remaining</span>
               )}
             </div>
+            {event.seriesId && event.seriesEventCount > 1 && (
+              <div className="flex items-center gap-2">
+                <Repeat className="h-5 w-5" />
+                <span>Part of a {event.seriesEventCount}-event series</span>
+              </div>
+            )}
+            {event.showOwnerEmail && event.ownerEmail && (
+              <div className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                <a href={`mailto:${event.ownerEmail}`} className="hover:text-white underline underline-offset-2">
+                  {event.ownerEmail}
+                </a>
+              </div>
+            )}
           </div>
         </Container>
       </section>
@@ -133,6 +147,8 @@ export default async function EventPage({
                   <EventRegistrationForm
                     eventId={event.id}
                     isFull={isFull}
+                    seriesId={event.seriesId}
+                    seriesEventCount={event.seriesEventCount}
                   />
                 )}
               </div>

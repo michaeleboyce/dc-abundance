@@ -12,6 +12,8 @@ interface EventRegistrationFormProps {
   eventId: number;
   isFull: boolean;
   className?: string;
+  seriesId?: string | null;
+  seriesEventCount?: number;
 }
 
 const initialState: RegistrationFormState = {
@@ -19,9 +21,12 @@ const initialState: RegistrationFormState = {
   message: '',
 };
 
-export function EventRegistrationForm({ eventId, isFull, className }: EventRegistrationFormProps) {
+export function EventRegistrationForm({ eventId, isFull, className, seriesId, seriesEventCount }: EventRegistrationFormProps) {
   const [state, formAction, isPending] = useActionState(registerForEvent, initialState);
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [registerForSeries, setRegisterForSeries] = useState(false);
+
+  const showSeriesOption = seriesId && seriesEventCount && seriesEventCount > 1;
 
   // Show success state
   if (state.success && state.message) {
@@ -60,6 +65,8 @@ export function EventRegistrationForm({ eventId, isFull, className }: EventRegis
   return (
     <form action={formAction} className={cn('space-y-4', className)}>
       <input type="hidden" name="eventId" value={eventId} />
+      {seriesId && <input type="hidden" name="seriesId" value={seriesId} />}
+      <input type="hidden" name="registerForSeries" value={registerForSeries ? "true" : "false"} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
@@ -87,6 +94,24 @@ export function EventRegistrationForm({ eventId, isFull, className }: EventRegis
         required
         error={state.errors?.email?.[0]}
       />
+
+      {showSeriesOption && (
+        <div className="flex items-start gap-3 p-4 bg-primary-50 rounded-lg">
+          <input
+            type="checkbox"
+            id="registerForSeries"
+            checked={registerForSeries}
+            onChange={(e) => setRegisterForSeries(e.target.checked)}
+            className="h-4 w-4 mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+          />
+          <label htmlFor="registerForSeries" className="text-sm">
+            <span className="font-medium text-primary-800">Register for all {seriesEventCount} events in this series</span>
+            <p className="text-primary-600 mt-0.5">
+              You&apos;ll be signed up for all upcoming events in one go.
+            </p>
+          </label>
+        </div>
+      )}
 
       <input type="hidden" name="turnstileToken" value={turnstileToken} />
       <Turnstile onSuccess={setTurnstileToken} />

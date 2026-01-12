@@ -1,13 +1,20 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { events, eventRegistrations } from "@/lib/db/schema";
+import { events, eventRegistrations, eventSeries } from "@/lib/db/schema";
 import { eq, asc, and, count } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { resend, FROM_EMAIL, SITE_URL } from "@/lib/email";
 import { WaitlistPromotedEmail } from "@/lib/email/templates/waitlist-promoted";
+import {
+  generateWeeklyDates,
+  generateMonthlyDates,
+  generateDateSlugSuffix,
+  type DayOfWeek,
+  type WeekOfMonth,
+} from "@/lib/recurrence";
 
 // Get event by ID (for editing)
 export async function getEventById(id: number) {
@@ -82,6 +89,17 @@ const eventSchema = z.object({
   locationAddress: z.string().optional().or(z.literal("")),
   maxAttendees: z.coerce.number().min(1, "Must have at least 1 attendee"),
   status: z.enum(['draft', 'published', 'cancelled']),
+  ownerEmail: z.string().email("Please enter a valid email address"),
+  showOwnerEmail: z.boolean().optional().default(false),
+});
+
+// Recurring event schema
+const recurringEventSchema = eventSchema.omit({ slug: true }).extend({
+  recurrenceType: z.enum(['weekly', 'monthly']),
+  intervalWeeks: z.coerce.number().min(1).max(12).optional(),
+  dayOfWeek: z.coerce.number().min(0).max(6).optional(),
+  weekOfMonth: z.coerce.number().min(1).max(5).optional(),
+  occurrences: z.coerce.number().min(2).max(104),
 });
 
 export type EventFormState = {
@@ -104,6 +122,8 @@ export async function createEvent(
     locationAddress: formData.get("locationAddress") || "",
     maxAttendees: formData.get("maxAttendees"),
     status: formData.get("status"),
+    ownerEmail: formData.get("ownerEmail"),
+    showOwnerEmail: formData.get("showOwnerEmail") === "on",
   };
 
   const validatedFields = eventSchema.safeParse(rawData);
@@ -144,6 +164,8 @@ export async function createEvent(
       locationAddress: data.locationAddress || null,
       maxAttendees: data.maxAttendees,
       status: data.status,
+      ownerEmail: data.ownerEmail,
+      showOwnerEmail: data.showOwnerEmail ?? false,
     });
 
     revalidatePath('/admin/events');
@@ -174,6 +196,8 @@ export async function updateEvent(
     locationAddress: formData.get("locationAddress") || "",
     maxAttendees: formData.get("maxAttendees"),
     status: formData.get("status"),
+    ownerEmail: formData.get("ownerEmail"),
+    showOwnerEmail: formData.get("showOwnerEmail") === "on",
   };
 
   const validatedFields = eventSchema.safeParse(rawData);
@@ -216,6 +240,8 @@ export async function updateEvent(
         locationAddress: data.locationAddress || null,
         maxAttendees: data.maxAttendees,
         status: data.status,
+        ownerEmail: data.ownerEmail,
+        showOwnerEmail: data.showOwnerEmail ?? false,
         updatedAt: new Date(),
       })
       .where(eq(events.id, id));
@@ -225,6 +251,129 @@ export async function updateEvent(
     revalidatePath(`/events/${data.slug}`);
   } catch (error) {
     console.error("Update event error:", error);
+    return {
+      success: false,
+      message: "Something went wrong. Please try again.",
+    };
+  }
+
+  redirect('/admin/events');
+}
+
+// Helper to generate a slug from title and date
+function generateSlug(title: string, date: Date): string {
+  const baseSlug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim();
+  const dateSuffix = generateDateSlugSuffix(date);
+  return `${baseSlug}-${dateSuffix}`;
+}
+
+export async function createRecurringEvent(
+  prevState: EventFormState,
+  formData: FormData
+): Promise<EventFormState> {
+  const rawData = {
+    title: formData.get("title"),
+    description: formData.get("description"),
+    shortDescription: formData.get("shortDescription") || "",
+    eventDate: formData.get("eventDate"),
+    location: formData.get("location"),
+    locationAddress: formData.get("locationAddress") || "",
+    maxAttendees: formData.get("maxAttendees"),
+    status: formData.get("status"),
+    ownerEmail: formData.get("ownerEmail"),
+    showOwnerEmail: formData.get("showOwnerEmail") === "on",
+    recurrenceType: formData.get("recurrenceType"),
+    intervalWeeks: formData.get("intervalWeeks") || "1",
+    dayOfWeek: formData.get("dayOfWeek") || "0",
+    weekOfMonth: formData.get("weekOfMonth") || "1",
+    occurrences: formData.get("occurrences"),
+  };
+
+  const validatedFields = recurringEventSchema.safeParse(rawData);
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: "Please fix the errors below.",
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+
+  const data = validatedFields.data;
+
+  try {
+    // Generate dates based on recurrence pattern
+    const startDate = new Date(data.eventDate);
+    let eventDates: Date[];
+
+    if (data.recurrenceType === 'weekly') {
+      eventDates = generateWeeklyDates(
+        startDate,
+        data.intervalWeeks || 1,
+        data.occurrences
+      );
+    } else {
+      eventDates = generateMonthlyDates(
+        startDate,
+        (data.dayOfWeek || startDate.getDay()) as DayOfWeek,
+        (data.weekOfMonth || 1) as WeekOfMonth,
+        data.occurrences
+      );
+    }
+
+    // Create series record
+    const [series] = await db.insert(eventSeries).values({
+      title: data.title,
+    }).returning();
+
+    // Create individual events
+    const eventValues = eventDates.map((date) => ({
+      title: data.title,
+      slug: generateSlug(data.title, date),
+      description: data.description,
+      shortDescription: data.shortDescription || null,
+      eventDate: date,
+      location: data.location,
+      locationAddress: data.locationAddress || null,
+      maxAttendees: data.maxAttendees,
+      status: data.status,
+      ownerEmail: data.ownerEmail,
+      showOwnerEmail: data.showOwnerEmail ?? false,
+      seriesId: series.id,
+      recurrenceType: data.recurrenceType,
+    }));
+
+    // Check for any duplicate slugs
+    for (const eventValue of eventValues) {
+      const existing = await db
+        .select()
+        .from(events)
+        .where(eq(events.slug, eventValue.slug))
+        .limit(1);
+
+      if (existing.length > 0) {
+        // Clean up the series we created
+        await db.delete(eventSeries).where(eq(eventSeries.id, series.id));
+        return {
+          success: false,
+          message: `A slug conflict exists: "${eventValue.slug}" is already in use.`,
+          errors: { title: ["An event with a generated slug already exists"] },
+        };
+      }
+    }
+
+    // Insert all events
+    await db.insert(events).values(eventValues);
+
+    revalidatePath('/admin/events');
+    revalidatePath('/events');
+  } catch (error) {
+    console.error("Create recurring event error:", error);
     return {
       success: false,
       message: "Something went wrong. Please try again.",

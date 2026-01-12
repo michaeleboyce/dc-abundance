@@ -44,6 +44,16 @@ export const eventStatusEnum = pgEnum('event_status', ['draft', 'published', 'ca
 // Registration status enum
 export const registrationStatusEnum = pgEnum('registration_status', ['confirmed', 'waitlisted', 'cancelled']);
 
+// Recurrence type enum
+export const recurrenceTypeEnum = pgEnum('recurrence_type', ['weekly', 'monthly']);
+
+// Event series table (groups recurring events)
+export const eventSeries = pgTable('event_series', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  title: text('title').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Events table
 export const events = pgTable('events', {
   id: serial('id').primaryKey(),
@@ -56,6 +66,12 @@ export const events = pgTable('events', {
   locationAddress: text('location_address'),
   maxAttendees: integer('max_attendees').notNull(),
   status: eventStatusEnum('status').notNull().default('draft'),
+  // Event owner
+  ownerEmail: text('owner_email').notNull().default(''),
+  showOwnerEmail: boolean('show_owner_email').notNull().default(false),
+  // Series/recurrence (null means single event)
+  seriesId: uuid('series_id').references(() => eventSeries.id, { onDelete: 'set null' }),
+  recurrenceType: recurrenceTypeEnum('recurrence_type'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -74,6 +90,17 @@ export const eventRegistrations = pgTable('event_registrations', {
   waitlistPosition: integer('waitlist_position'),
 });
 
+// Series registrations table (for registering to an entire series)
+export const seriesRegistrations = pgTable('series_registrations', {
+  id: serial('id').primaryKey(),
+  seriesId: uuid('series_id').notNull().references(() => eventSeries.id, { onDelete: 'cascade' }),
+  email: text('email').notNull(),
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name'),
+  registeredAt: timestamp('registered_at', { withTimezone: true }).notNull().defaultNow(),
+  cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+});
+
 // Type exports for type-safe queries
 export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
 export type NewNewsletterSubscriber = typeof newsletterSubscribers.$inferInsert;
@@ -81,8 +108,14 @@ export type NewNewsletterSubscriber = typeof newsletterSubscribers.$inferInsert;
 export type ContactSubmission = typeof contactSubmissions.$inferSelect;
 export type NewContactSubmission = typeof contactSubmissions.$inferInsert;
 
+export type EventSeries = typeof eventSeries.$inferSelect;
+export type NewEventSeries = typeof eventSeries.$inferInsert;
+
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;
 
 export type EventRegistration = typeof eventRegistrations.$inferSelect;
 export type NewEventRegistration = typeof eventRegistrations.$inferInsert;
+
+export type SeriesRegistration = typeof seriesRegistrations.$inferSelect;
+export type NewSeriesRegistration = typeof seriesRegistrations.$inferInsert;
