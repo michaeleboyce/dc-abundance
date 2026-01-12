@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useState, useRef, useEffect } from 'react';
 import { registerForEvent, type RegistrationFormState } from '@/lib/actions/events';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -25,8 +25,24 @@ export function EventRegistrationForm({ eventId, isFull, className, seriesId, se
   const [state, formAction, isPending] = useActionState(registerForEvent, initialState);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [registerForSeries, setRegisterForSeries] = useState(false);
+  const [showTurnstile, setShowTurnstile] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const showSeriesOption = seriesId && seriesEventCount && seriesEventCount > 1;
+
+  // Auto-submit when turnstile token is received
+  useEffect(() => {
+    if (turnstileToken && showTurnstile && formRef.current) {
+      formRef.current.requestSubmit();
+    }
+  }, [turnstileToken, showTurnstile]);
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    if (!turnstileToken && !showTurnstile) {
+      e.preventDefault();
+      setShowTurnstile(true);
+    }
+  };
 
   // Show success state
   if (state.success && state.message) {
@@ -63,7 +79,7 @@ export function EventRegistrationForm({ eventId, isFull, className, seriesId, se
   }
 
   return (
-    <form action={formAction} className={cn('space-y-4', className)}>
+    <form ref={formRef} action={formAction} className={cn('space-y-4', className)}>
       <input type="hidden" name="eventId" value={eventId} />
       {seriesId && <input type="hidden" name="seriesId" value={seriesId} />}
       <input type="hidden" name="registerForSeries" value={registerForSeries ? "true" : "false"} />
@@ -114,7 +130,7 @@ export function EventRegistrationForm({ eventId, isFull, className, seriesId, se
       )}
 
       <input type="hidden" name="turnstileToken" value={turnstileToken} />
-      <Turnstile onSuccess={setTurnstileToken} />
+      {showTurnstile && <Turnstile onSuccess={setTurnstileToken} />}
 
       {state.message && !state.success && (
         <p className="text-red-500 text-sm">{state.message}</p>
@@ -123,9 +139,10 @@ export function EventRegistrationForm({ eventId, isFull, className, seriesId, se
       <Button
         type="submit"
         size="lg"
-        isLoading={isPending}
+        isLoading={isPending || (showTurnstile && !turnstileToken)}
         className="w-full"
         variant={isFull ? 'secondary' : 'primary'}
+        onClick={handleButtonClick}
       >
         {isFull ? 'Join Waitlist' : 'Register'}
       </Button>

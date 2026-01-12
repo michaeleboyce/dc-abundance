@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { events, eventRegistrations } from '@/lib/db/schema';
-import { eq, and, asc } from 'drizzle-orm';
+import { eq, and, asc, sql } from 'drizzle-orm';
 import { resend, FROM_EMAIL, SITE_URL } from '@/lib/email';
 import { WaitlistPromotedEmail } from '@/lib/email/templates/waitlist-promoted';
 
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Find the registration
+    // Find the registration (outside transaction for initial validation)
     const [registration] = await db
       .select()
       .from(eventRegistrations)
@@ -29,76 +29,102 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/events?message=already-cancelled', request.url));
     }
 
-    const wasConfirmed = registration.status === 'confirmed';
+    // Use transaction with row locking for cancellation + promotion
+    const result = await db.transaction(async (tx) => {
+      // Lock the event row to prevent concurrent modifications
+      await tx.execute(sql`SELECT id FROM events WHERE id = ${registration.eventId} FOR UPDATE`);
 
-    // Mark as cancelled
-    await db
-      .update(eventRegistrations)
-      .set({
-        status: 'cancelled',
-        cancelledAt: new Date(),
-      })
-      .where(eq(eventRegistrations.id, registration.id));
-
-    // If was confirmed, promote first waitlisted person
-    if (wasConfirmed) {
-      const [nextInLine] = await db
+      // Re-check registration status (may have changed since initial check)
+      const [currentReg] = await tx
         .select()
         .from(eventRegistrations)
-        .where(
-          and(
-            eq(eventRegistrations.eventId, registration.eventId),
-            eq(eventRegistrations.status, 'waitlisted')
-          )
-        )
-        .orderBy(asc(eventRegistrations.waitlistPosition))
+        .where(eq(eventRegistrations.id, registration.id))
         .limit(1);
 
-      if (nextInLine) {
-        await db
-          .update(eventRegistrations)
-          .set({
-            status: 'confirmed',
-            waitlistPosition: null,
-          })
-          .where(eq(eventRegistrations.id, nextInLine.id));
+      if (!currentReg || currentReg.status === 'cancelled') {
+        return { alreadyCancelled: true, promotedPerson: null };
+      }
 
-        // Get event details for email
-        const [event] = await db
+      const wasConfirmed = currentReg.status === 'confirmed';
+
+      // Mark as cancelled
+      await tx
+        .update(eventRegistrations)
+        .set({
+          status: 'cancelled',
+          cancelledAt: new Date(),
+        })
+        .where(eq(eventRegistrations.id, registration.id));
+
+      // If was confirmed, promote first waitlisted person (within same transaction)
+      let promotedPerson = null;
+      if (wasConfirmed) {
+        const [nextInLine] = await tx
           .select()
-          .from(events)
-          .where(eq(events.id, registration.eventId))
+          .from(eventRegistrations)
+          .where(
+            and(
+              eq(eventRegistrations.eventId, registration.eventId),
+              eq(eventRegistrations.status, 'waitlisted')
+            )
+          )
+          .orderBy(asc(eventRegistrations.waitlistPosition))
           .limit(1);
 
-        if (event) {
-          // Send promotion email
-          const eventDate = event.eventDate.toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
+        if (nextInLine) {
+          await tx
+            .update(eventRegistrations)
+            .set({
+              status: 'confirmed',
+              waitlistPosition: null,
+            })
+            .where(eq(eventRegistrations.id, nextInLine.id));
+          promotedPerson = nextInLine;
+        }
+      }
+
+      return { alreadyCancelled: false, promotedPerson };
+    });
+
+    if (result.alreadyCancelled) {
+      return NextResponse.redirect(new URL('/events?message=already-cancelled', request.url));
+    }
+
+    // Send promotion email (outside transaction - don't roll back on email failure)
+    if (result.promotedPerson) {
+      const [event] = await db
+        .select()
+        .from(events)
+        .where(eq(events.id, registration.eventId))
+        .limit(1);
+
+      if (event) {
+        const eventDate = event.eventDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        });
+
+        const cancelUrl = `${SITE_URL}/api/cancel-registration?token=${result.promotedPerson.confirmationToken}`;
+
+        try {
+          await resend.emails.send({
+            from: FROM_EMAIL,
+            to: result.promotedPerson.email,
+            subject: `A spot opened up: ${event.title}`,
+            react: WaitlistPromotedEmail({
+              firstName: result.promotedPerson.firstName,
+              eventTitle: event.title,
+              eventDate,
+              location: event.location,
+              cancelUrl,
+            }),
           });
-
-          const cancelUrl = `${SITE_URL}/api/cancel-registration?token=${nextInLine.confirmationToken}`;
-
-          try {
-            await resend.emails.send({
-              from: FROM_EMAIL,
-              to: nextInLine.email,
-              subject: `A spot opened up: ${event.title}`,
-              react: WaitlistPromotedEmail({
-                firstName: nextInLine.firstName,
-                eventTitle: event.title,
-                eventDate,
-                location: event.location,
-                cancelUrl,
-              }),
-            });
-          } catch (emailError) {
-            console.error('Failed to send promotion email:', emailError);
-          }
+        } catch (emailError) {
+          console.error('Failed to send promotion email:', emailError);
         }
       }
     }

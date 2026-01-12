@@ -6,7 +6,7 @@ import { imagePlaceholders } from '@/lib/image-placeholders';
 import { getUpcomingEvents } from '@/lib/actions/events';
 import { db } from '@/lib/db';
 import { eventRegistrations } from '@/lib/db/schema';
-import { eq, count, and } from 'drizzle-orm';
+import { eq, count, and, inArray } from 'drizzle-orm';
 
 export const metadata: Metadata = {
   title: 'Events | DC Abundance',
@@ -22,26 +22,36 @@ export const revalidate = 60; // Revalidate every 60 seconds
 async function getEventsWithCounts() {
   const events = await getUpcomingEvents();
 
-  // Get confirmed counts for each event
-  const eventsWithCounts = await Promise.all(
-    events.map(async (event) => {
-      const [result] = await db
-        .select({ count: count() })
-        .from(eventRegistrations)
-        .where(
-          and(
-            eq(eventRegistrations.eventId, event.id),
-            eq(eventRegistrations.status, 'confirmed')
-          )
-        );
-      return {
-        event,
-        confirmedCount: result?.count || 0,
-      };
-    })
-  );
+  if (events.length === 0) {
+    return [];
+  }
 
-  return eventsWithCounts;
+  // Get confirmed counts in a single grouped query (avoids N+1)
+  const eventIds = events.map(e => e.id);
+  const confirmedCounts = await db
+    .select({
+      eventId: eventRegistrations.eventId,
+      count: count(),
+    })
+    .from(eventRegistrations)
+    .where(
+      and(
+        inArray(eventRegistrations.eventId, eventIds),
+        eq(eventRegistrations.status, 'confirmed')
+      )
+    )
+    .groupBy(eventRegistrations.eventId);
+
+  // Build a lookup map
+  const countMap = new Map<number, number>();
+  for (const row of confirmedCounts) {
+    countMap.set(row.eventId, row.count);
+  }
+
+  return events.map(event => ({
+    event,
+    confirmedCount: countMap.get(event.id) || 0,
+  }));
 }
 
 export default async function EventsPage() {

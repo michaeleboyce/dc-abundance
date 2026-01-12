@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { events, eventRegistrations, eventSeries } from "@/lib/db/schema";
-import { eq, asc, and, count } from "drizzle-orm";
+import { eq, asc, and, count, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -34,38 +34,42 @@ export async function getAdminEvents() {
     .from(events)
     .orderBy(asc(events.eventDate));
 
-  // Get registration counts for each event
-  const eventsWithCounts = await Promise.all(
-    allEvents.map(async (event) => {
-      const [confirmedCount] = await db
-        .select({ count: count() })
-        .from(eventRegistrations)
-        .where(
-          and(
-            eq(eventRegistrations.eventId, event.id),
-            eq(eventRegistrations.status, 'confirmed')
-          )
-        );
+  if (allEvents.length === 0) {
+    return [];
+  }
 
-      const [waitlistCount] = await db
-        .select({ count: count() })
-        .from(eventRegistrations)
-        .where(
-          and(
-            eq(eventRegistrations.eventId, event.id),
-            eq(eventRegistrations.status, 'waitlisted')
-          )
-        );
-
-      return {
-        ...event,
-        confirmedCount: confirmedCount?.count || 0,
-        waitlistCount: waitlistCount?.count || 0,
-      };
+  // Get registration counts in a single grouped query (avoids N+1)
+  const eventIds = allEvents.map(e => e.id);
+  const registrationCounts = await db
+    .select({
+      eventId: eventRegistrations.eventId,
+      status: eventRegistrations.status,
+      count: count(),
     })
-  );
+    .from(eventRegistrations)
+    .where(inArray(eventRegistrations.eventId, eventIds))
+    .groupBy(eventRegistrations.eventId, eventRegistrations.status);
 
-  return eventsWithCounts;
+  // Build a lookup map for counts
+  const countMap = new Map<number, { confirmed: number; waitlisted: number }>();
+  for (const row of registrationCounts) {
+    if (!countMap.has(row.eventId)) {
+      countMap.set(row.eventId, { confirmed: 0, waitlisted: 0 });
+    }
+    const entry = countMap.get(row.eventId)!;
+    if (row.status === 'confirmed') {
+      entry.confirmed = row.count;
+    } else if (row.status === 'waitlisted') {
+      entry.waitlisted = row.count;
+    }
+  }
+
+  // Map events with their counts
+  return allEvents.map(event => ({
+    ...event,
+    confirmedCount: countMap.get(event.id)?.confirmed || 0,
+    waitlistCount: countMap.get(event.id)?.waitlisted || 0,
+  }));
 }
 
 // Get registrations for an event

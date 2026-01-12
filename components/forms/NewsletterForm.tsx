@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useState, useRef, useEffect } from 'react';
 import { subscribeToNewsletter, type NewsletterFormState } from '@/lib/actions/newsletter';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -22,6 +22,22 @@ const initialState: NewsletterFormState = {
 export function NewsletterForm({ variant = 'section', className, dark }: NewsletterFormProps) {
   const [state, formAction, isPending] = useActionState(subscribeToNewsletter, initialState);
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [showTurnstile, setShowTurnstile] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Auto-submit when turnstile token is received
+  useEffect(() => {
+    if (turnstileToken && showTurnstile && formRef.current) {
+      formRef.current.requestSubmit();
+    }
+  }, [turnstileToken, showTurnstile]);
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    if (!turnstileToken && !showTurnstile) {
+      e.preventDefault();
+      setShowTurnstile(true);
+    }
+  };
 
   // Show success state
   if (state.success && state.message) {
@@ -36,7 +52,7 @@ export function NewsletterForm({ variant = 'section', className, dark }: Newslet
   // Compact variant - just email
   if (variant === 'compact') {
     return (
-      <form action={formAction} className={cn('space-y-3', className)}>
+      <form ref={formRef} action={formAction} className={cn('space-y-3', className)}>
         <div className="flex gap-2">
           <Input
             name="email"
@@ -46,12 +62,12 @@ export function NewsletterForm({ variant = 'section', className, dark }: Newslet
             error={state.errors?.email?.[0]}
             className="flex-1"
           />
-          <Button type="submit" isLoading={isPending}>
+          <Button type="submit" isLoading={isPending || (showTurnstile && !turnstileToken)} onClick={handleButtonClick}>
             Subscribe
           </Button>
         </div>
         <input type="hidden" name="turnstileToken" value={turnstileToken} />
-        <Turnstile onSuccess={setTurnstileToken} />
+        {showTurnstile && <Turnstile onSuccess={setTurnstileToken} />}
       </form>
     );
   }
@@ -59,7 +75,7 @@ export function NewsletterForm({ variant = 'section', className, dark }: Newslet
   // Hero variant - horizontal layout on desktop
   if (variant === 'hero') {
     return (
-      <form action={formAction} className={cn('w-full max-w-xl space-y-3', className)}>
+      <form ref={formRef} action={formAction} className={cn('w-full max-w-xl space-y-3', className)}>
         <div className="flex flex-col sm:flex-row gap-3">
           <Input
             name="email"
@@ -69,12 +85,12 @@ export function NewsletterForm({ variant = 'section', className, dark }: Newslet
             error={state.errors?.email?.[0]}
             className="flex-1 bg-white/95"
           />
-          <Button type="submit" size="lg" isLoading={isPending} className="sm:w-auto">
+          <Button type="submit" size="lg" isLoading={isPending || (showTurnstile && !turnstileToken)} onClick={handleButtonClick} className="sm:w-auto">
             Join the Movement
           </Button>
         </div>
         <input type="hidden" name="turnstileToken" value={turnstileToken} />
-        <Turnstile onSuccess={setTurnstileToken} />
+        {showTurnstile && <Turnstile onSuccess={setTurnstileToken} />}
         {state.message && !state.success && (
           <p className="mt-2 text-red-200 text-sm">{state.message}</p>
         )}
@@ -84,7 +100,7 @@ export function NewsletterForm({ variant = 'section', className, dark }: Newslet
 
   // Section variant - full form with optional fields
   return (
-    <form action={formAction} className={cn('w-full max-w-md space-y-4', className)}>
+    <form ref={formRef} action={formAction} className={cn('w-full max-w-md space-y-4', className)}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
           name="firstName"
@@ -121,11 +137,11 @@ export function NewsletterForm({ variant = 'section', className, dark }: Newslet
         dark={dark}
       />
       <input type="hidden" name="turnstileToken" value={turnstileToken} />
-      <Turnstile onSuccess={setTurnstileToken} />
+      {showTurnstile && <Turnstile onSuccess={setTurnstileToken} />}
       {state.message && !state.success && (
         <p className={cn('text-sm', dark ? 'text-red-300' : 'text-red-500')}>{state.message}</p>
       )}
-      <Button type="submit" size="lg" isLoading={isPending} className="w-full">
+      <Button type="submit" size="lg" isLoading={isPending || (showTurnstile && !turnstileToken)} onClick={handleButtonClick} className="w-full">
         Join the Movement
       </Button>
     </form>

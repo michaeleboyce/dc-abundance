@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useState, useRef, useEffect } from 'react';
 import { submitContactForm, type ContactFormState } from '@/lib/actions/contact';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
@@ -21,7 +21,7 @@ const initialState: ContactFormState = {
 const inquiryTypes = [
   { value: 'general', label: 'General Inquiry' },
   { value: 'housing', label: 'Housing' },
-  { value: 'transportation', label: 'Transportation' },
+  { value: 'transit', label: 'Transportation' },
   { value: 'energy', label: 'Energy' },
   { value: 'government', label: 'Government' },
   { value: 'partnership', label: 'Partnership' },
@@ -32,6 +32,22 @@ const inquiryTypes = [
 export function ContactForm({ className }: ContactFormProps) {
   const [state, formAction, isPending] = useActionState(submitContactForm, initialState);
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [showTurnstile, setShowTurnstile] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Auto-submit when turnstile token is received
+  useEffect(() => {
+    if (turnstileToken && showTurnstile && formRef.current) {
+      formRef.current.requestSubmit();
+    }
+  }, [turnstileToken, showTurnstile]);
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    if (!turnstileToken && !showTurnstile) {
+      e.preventDefault();
+      setShowTurnstile(true);
+    }
+  };
 
   // Show success state
   if (state.success && state.message) {
@@ -49,7 +65,7 @@ export function ContactForm({ className }: ContactFormProps) {
   }
 
   return (
-    <form action={formAction} className={cn('space-y-6', className)}>
+    <form ref={formRef} action={formAction} className={cn('space-y-6', className)}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <Input
           name="name"
@@ -117,13 +133,13 @@ export function ContactForm({ className }: ContactFormProps) {
       />
 
       <input type="hidden" name="turnstileToken" value={turnstileToken} />
-      <Turnstile onSuccess={setTurnstileToken} />
+      {showTurnstile && <Turnstile onSuccess={setTurnstileToken} />}
 
       {state.message && !state.success && (
         <p className="text-red-500 text-sm">{state.message}</p>
       )}
 
-      <Button type="submit" size="lg" isLoading={isPending}>
+      <Button type="submit" size="lg" isLoading={isPending || (showTurnstile && !turnstileToken)} onClick={handleButtonClick}>
         Send Message
       </Button>
     </form>

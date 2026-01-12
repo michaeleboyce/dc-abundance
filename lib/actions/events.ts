@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { events, eventRegistrations, seriesRegistrations } from "@/lib/db/schema";
-import { eq, and, gt, asc, count, max } from "drizzle-orm";
+import { eq, and, gt, asc, count, max, sql } from "drizzle-orm";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { resend, FROM_EMAIL, SITE_URL } from "@/lib/email";
 import { RegistrationConfirmationEmail } from "@/lib/email/templates/registration-confirmation";
@@ -144,13 +144,13 @@ export async function registerForEvent(
     }
   }
 
-  try {
-    // Handle series registration
-    if (shouldRegisterForSeries) {
-      return await registerForSeriesEvents(seriesId, normalizedEmail, firstName, lastName || null);
-    }
+  // Handle series registration
+  if (shouldRegisterForSeries) {
+    return await registerForSeriesEvents(seriesId, normalizedEmail, firstName, lastName || null);
+  }
 
-    // Get the event
+  try {
+    // Get the event (outside transaction - read-only setup)
     const eventResult = await db
       .select()
       .from(events)
@@ -181,98 +181,120 @@ export async function registerForEvent(
       };
     }
 
-    // Check if already registered
-    const existingRegistration = await db
-      .select()
-      .from(eventRegistrations)
-      .where(
-        and(
-          eq(eventRegistrations.eventId, eventId),
-          eq(eventRegistrations.email, normalizedEmail)
-        )
-      )
-      .limit(1);
+    // Use transaction with row locking to prevent race conditions
+    const result = await db.transaction(async (tx) => {
+      // Lock the event row to prevent concurrent registration modifications
+      await tx.execute(sql`SELECT id FROM events WHERE id = ${eventId} FOR UPDATE`);
 
-    if (existingRegistration[0]) {
-      const existing = existingRegistration[0];
-      if (existing.status === 'cancelled') {
-        // Allow re-registration by updating the existing record
-        // Will be handled below
-      } else {
-        return {
-          success: true,
-          message: existing.status === 'confirmed'
-            ? "You're already registered for this event!"
-            : "You're already on the waitlist for this event.",
-          status: existing.status as 'confirmed' | 'waitlisted',
-        };
-      }
-    }
-
-    // Get current confirmed count
-    const [confirmedCount] = await db
-      .select({ count: count() })
-      .from(eventRegistrations)
-      .where(
-        and(
-          eq(eventRegistrations.eventId, eventId),
-          eq(eventRegistrations.status, 'confirmed')
-        )
-      );
-
-    const currentCount = confirmedCount?.count || 0;
-    const isFull = currentCount >= event.maxAttendees;
-    const status = isFull ? 'waitlisted' : 'confirmed';
-
-    // Get waitlist position if needed
-    let waitlistPosition: number | null = null;
-    if (status === 'waitlisted') {
-      const [maxPosition] = await db
-        .select({ maxPos: max(eventRegistrations.waitlistPosition) })
+      // Check if already registered (within transaction)
+      const existingRegistration = await tx
+        .select()
         .from(eventRegistrations)
         .where(
           and(
             eq(eventRegistrations.eventId, eventId),
-            eq(eventRegistrations.status, 'waitlisted')
+            eq(eventRegistrations.email, normalizedEmail)
+          )
+        )
+        .limit(1);
+
+      if (existingRegistration[0]) {
+        const existing = existingRegistration[0];
+        if (existing.status !== 'cancelled') {
+          return {
+            success: true,
+            message: existing.status === 'confirmed'
+              ? "You're already registered for this event!"
+              : "You're already on the waitlist for this event.",
+            status: existing.status as 'confirmed' | 'waitlisted',
+            registration: existing,
+            isExisting: true,
+          };
+        }
+      }
+
+      // Get current confirmed count (with lock held, prevents overbooking)
+      const [confirmedCount] = await tx
+        .select({ count: count() })
+        .from(eventRegistrations)
+        .where(
+          and(
+            eq(eventRegistrations.eventId, eventId),
+            eq(eventRegistrations.status, 'confirmed')
           )
         );
-      waitlistPosition = (maxPosition?.maxPos || 0) + 1;
+
+      const currentCount = confirmedCount?.count || 0;
+      const isFull = currentCount >= event.maxAttendees;
+      const status = isFull ? 'waitlisted' : 'confirmed';
+
+      // Get waitlist position if needed (within same transaction)
+      let waitlistPosition: number | null = null;
+      if (status === 'waitlisted') {
+        const [maxPosition] = await tx
+          .select({ maxPos: max(eventRegistrations.waitlistPosition) })
+          .from(eventRegistrations)
+          .where(
+            and(
+              eq(eventRegistrations.eventId, eventId),
+              eq(eventRegistrations.status, 'waitlisted')
+            )
+          );
+        waitlistPosition = (maxPosition?.maxPos || 0) + 1;
+      }
+
+      // Insert or update registration (within transaction)
+      let registration;
+      if (existingRegistration[0]?.status === 'cancelled') {
+        // Re-register by updating existing record
+        const [updated] = await tx
+          .update(eventRegistrations)
+          .set({
+            status,
+            firstName,
+            lastName: lastName || null,
+            registeredAt: new Date(),
+            cancelledAt: null,
+            waitlistPosition,
+          })
+          .where(eq(eventRegistrations.id, existingRegistration[0].id))
+          .returning();
+        registration = updated;
+      } else {
+        // Create new registration
+        const [inserted] = await tx
+          .insert(eventRegistrations)
+          .values({
+            eventId,
+            email: normalizedEmail,
+            firstName,
+            lastName: lastName || null,
+            status,
+            waitlistPosition,
+          })
+          .returning();
+        registration = inserted;
+      }
+
+      return {
+        success: true,
+        status,
+        waitlistPosition,
+        registration,
+        isExisting: false,
+      };
+    });
+
+    // If already registered (not cancelled), return early
+    if (result.isExisting) {
+      return {
+        success: result.success,
+        message: result.message!,
+        status: result.status as 'confirmed' | 'waitlisted',
+      };
     }
 
-    // Insert or update registration
-    let registration;
-    if (existingRegistration[0]?.status === 'cancelled') {
-      // Re-register by updating existing record
-      const [updated] = await db
-        .update(eventRegistrations)
-        .set({
-          status,
-          firstName,
-          lastName: lastName || null,
-          registeredAt: new Date(),
-          cancelledAt: null,
-          waitlistPosition,
-        })
-        .where(eq(eventRegistrations.id, existingRegistration[0].id))
-        .returning();
-      registration = updated;
-    } else {
-      // Create new registration
-      const [inserted] = await db
-        .insert(eventRegistrations)
-        .values({
-          eventId,
-          email: normalizedEmail,
-          firstName,
-          lastName: lastName || null,
-          status,
-          waitlistPosition,
-        })
-        .returning();
-      registration = inserted;
-    }
-
-    // Format date for email
+    // Format date for email (outside transaction)
     const eventDate = event.eventDate.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -282,11 +304,11 @@ export async function registerForEvent(
       minute: '2-digit',
     });
 
-    const cancelUrl = `${SITE_URL}/api/cancel-registration?token=${registration.confirmationToken}`;
+    const cancelUrl = `${SITE_URL}/api/cancel-registration?token=${result.registration.confirmationToken}`;
 
-    // Send confirmation email
+    // Send confirmation email (outside transaction - don't roll back on email failure)
     try {
-      if (status === 'confirmed') {
+      if (result.status === 'confirmed') {
         await resend.emails.send({
           from: FROM_EMAIL,
           to: normalizedEmail,
@@ -308,7 +330,7 @@ export async function registerForEvent(
             firstName,
             eventTitle: event.title,
             eventDate,
-            waitlistPosition: waitlistPosition!,
+            waitlistPosition: result.waitlistPosition!,
             cancelUrl,
           }),
         });
@@ -320,12 +342,20 @@ export async function registerForEvent(
 
     return {
       success: true,
-      message: status === 'confirmed'
+      message: result.status === 'confirmed'
         ? "You're registered! Check your email for confirmation."
-        : `You're #${waitlistPosition} on the waitlist. We'll email you if a spot opens up.`,
-      status,
+        : `You're #${result.waitlistPosition} on the waitlist. We'll email you if a spot opens up.`,
+      status: result.status as 'confirmed' | 'waitlisted',
     };
-  } catch (error) {
+  } catch (error: unknown) {
+    // Handle unique constraint violation (race condition fallback)
+    if (error instanceof Error && error.message.includes('unique_event_email')) {
+      return {
+        success: true,
+        message: "You're already registered for this event!",
+        status: 'confirmed' as const,
+      };
+    }
     console.error("Registration error:", error);
     return {
       success: false,
