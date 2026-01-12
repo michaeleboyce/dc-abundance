@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Container } from '@/components/ui/Container';
-import { Home, Train, Zap, Building2, ArrowRight } from 'lucide-react';
+import { Home, Train, Zap, Building2, Microscope, ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Focus Areas',
-  description: 'Explore DC Abundance priorities: Housing, Transportation, Energy, Government, and making daily life more affordable.',
+  description: 'Explore DC Abundance priorities: Housing, Transportation, Energy, Science & Innovation, and Government.',
 };
 
 const focusAreas = [
@@ -39,6 +39,16 @@ const focusAreas = [
       'Clean energy should be cheap and plentiful. We support streamlined permitting for solar and wind projects, grid modernization, and policies that reduce energy costs.',
     href: '/focus-areas/energy',
     color: 'bg-amber-500',
+  },
+  {
+    name: 'Science & Innovation',
+    icon: Microscope,
+    image: '/images/goddard-space-center.jpg',
+    imageAlt: 'NASA Goddard Space Flight Center aerial view',
+    description:
+      'Accelerate research and get life-saving treatments to people faster. Support the science that solves tomorrow\'s problems and remove barriers to beneficial technologies.',
+    href: '/focus-areas/science',
+    color: 'bg-indigo-500',
   },
   {
     name: 'Government That Works',

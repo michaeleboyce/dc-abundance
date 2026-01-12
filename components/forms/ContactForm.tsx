@@ -1,10 +1,11 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { submitContactForm, type ContactFormState } from '@/lib/actions/contact';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
+import { Turnstile } from '@/components/ui/Turnstile';
 import { cn } from '@/lib/utils';
 import { CheckCircle } from 'lucide-react';
 
@@ -30,6 +31,7 @@ const inquiryTypes = [
 
 export function ContactForm({ className }: ContactFormProps) {
   const [state, formAction, isPending] = useActionState(submitContactForm, initialState);
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   // Show success state
   if (state.success && state.message) {
@@ -113,6 +115,9 @@ export function ContactForm({ className }: ContactFormProps) {
         rows={6}
         error={state.errors?.message?.[0]}
       />
+
+      <input type="hidden" name="turnstileToken" value={turnstileToken} />
+      <Turnstile onSuccess={setTurnstileToken} />
 
       {state.message && !state.success && (
         <p className="text-red-500 text-sm">{state.message}</p>

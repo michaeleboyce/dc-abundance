@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Container } from '@/components/ui/Container';
-import { Home, Train, Zap, Building2, ArrowRight } from 'lucide-react';
+import { Home, Train, Zap, Microscope, Building2, ArrowRight } from 'lucide-react';
 
 const pillars = [
   {
@@ -35,11 +35,21 @@ const pillars = [
     statsLabel: 'renewable energy target for DC by 2032',
   },
   {
+    name: 'Science',
+    icon: Microscope,
+    image: '/images/goddard-space-center.jpg',
+    imageAlt: 'NASA Goddard Space Flight Center aerial view',
+    description: 'Accelerate research. Faster drug approvals. Support the science that solves tomorrow\'s problems.',
+    href: '/focus-areas/science',
+    stats: '10yrs',
+    statsLabel: 'average time to develop a new drug',
+  },
+  {
     name: 'Government',
     icon: Building2,
     image: '/images/library-of-congress.jpg',
     imageAlt: 'Library of Congress interior representing government institutions',
-    description: 'Efficient permitting. Responsive services. Transparent processes. A government that enables progress.',
+    description: 'Efficient permitting. Maintained infrastructure. A government that enables progress.',
     href: '/focus-areas/government',
     stats: '18mo',
     statsLabel: 'average time to approve a construction permit',
@@ -62,7 +72,7 @@ export function PolicyPillars() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 lg:gap-5">
           {pillars.map((pillar, index) => {
             const Icon = pillar.icon;
             return (

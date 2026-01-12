@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { newsletterSubscribers } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 // Zod schema for type-safe validation (prevents SQL injection)
 const newsletterSchema = z.object({
@@ -15,6 +16,7 @@ const newsletterSchema = z.object({
     .regex(/^\d{5}(-\d{4})?$/, "Please enter a valid ZIP code")
     .optional()
     .or(z.literal("")),
+  turnstileToken: z.string().optional(),
 });
 
 export type NewsletterFormState = {
@@ -38,6 +40,7 @@ export async function subscribeToNewsletter(
     firstName: formData.get("firstName") || "",
     lastName: formData.get("lastName") || "",
     zipCode: formData.get("zipCode") || "",
+    turnstileToken: formData.get("turnstileToken") || "",
   };
 
   const validatedFields = newsletterSchema.safeParse(rawData);
@@ -50,7 +53,18 @@ export async function subscribeToNewsletter(
     };
   }
 
-  const { email, firstName, lastName, zipCode } = validatedFields.data;
+  const { email, firstName, lastName, zipCode, turnstileToken } = validatedFields.data;
+
+  // Verify Turnstile token (if configured)
+  if (turnstileToken) {
+    const isHuman = await verifyTurnstile(turnstileToken);
+    if (!isHuman) {
+      return {
+        success: false,
+        message: "Verification failed. Please try again.",
+      };
+    }
+  }
 
   try {
     // Normalize email to lowercase

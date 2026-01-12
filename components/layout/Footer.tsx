@@ -12,6 +12,7 @@ const navigation = {
     { name: 'Housing', href: '/focus-areas/housing' },
     { name: 'Transportation', href: '/focus-areas/transportation' },
     { name: 'Energy', href: '/focus-areas/energy' },
+    { name: 'Science', href: '/focus-areas/science' },
     { name: 'Government', href: '/focus-areas/government' },
   ],
   legal: [

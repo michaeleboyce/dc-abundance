@@ -19,7 +19,7 @@ export default function AboutPage() {
             </h1>
             <p className="mt-6 text-xl text-neutral-200 leading-relaxed">
               A cross-partisan coalition working to make our capital more affordable,
-              sustainable, and livable for everyone.
+              prosperous, and livable for everyone.
             </p>
           </div>
         </Container>

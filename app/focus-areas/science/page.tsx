@@ -1,21 +1,21 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Container } from '@/components/ui/Container';
-import { Zap, Sun, Gauge, FileCheck } from 'lucide-react';
+import { Microscope, FlaskConical, Pill, Lightbulb, Rocket } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Energy Abundance',
-  description: 'Energy priorities: clean, affordable, and plentiful energy through streamlined permitting and grid modernization.',
+  title: 'Science & Innovation',
+  description: 'Science and innovation priorities: scientific research, faster drug approvals, medical breakthroughs, and technology that improves lives.',
 };
 
-export default function EnergyPage() {
+export default function SciencePage() {
   return (
     <>
       {/* Hero */}
       <section className="relative h-[50vh] min-h-[400px] flex items-end">
         <Image
-          src="/images/dulles-airport.jpg"
-          alt="Dulles Airport at dusk"
+          src="/images/goddard-space-center.jpg"
+          alt="NASA Goddard Space Flight Center aerial view"
           fill
           priority
           className="object-cover"
@@ -23,16 +23,16 @@ export default function EnergyPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
         <Container className="relative z-10 pb-12">
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-lg bg-amber-500">
-              <Zap className="h-6 w-6 text-white" />
+            <div className="p-2 rounded-lg bg-indigo-500">
+              <Microscope className="h-6 w-6 text-white" />
             </div>
-            <span className="text-amber-300 font-medium">Focus Area</span>
+            <span className="text-indigo-300 font-medium">Focus Area</span>
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white">
-            Energy Abundance
+            Science & Innovation
           </h1>
           <p className="mt-4 text-xl text-neutral-200 max-w-2xl">
-            Clean, affordable, and plentiful energy for everyone.
+            Accelerating research, enabling breakthroughs, and getting life-saving treatments to people faster.
           </p>
         </Container>
       </section>
@@ -44,14 +44,14 @@ export default function EnergyPage() {
             <h2 className="text-3xl md:text-4xl font-display font-bold text-neutral-800">The Challenge</h2>
             <div className="mt-6 space-y-4 text-lg text-neutral-600 leading-relaxed">
               <p>
-                We have ambitious climate goals. But realizing them requires building more
-                clean energy infrastructure—solar panels, grid upgrades, advanced nuclear,
-                and EV charging stations.
+                The Washington region is home to world-class research institutions—NIH, NASA Goddard,
+                leading universities, and countless biotech companies. Yet too often, promising
+                discoveries take decades to reach the people who need them.
               </p>
               <p>
-                The problem? Permitting and regulations often make these projects harder,
-                not easier. We need to remove barriers to clean energy deployment while
-                ensuring projects are done right.
+                Drug approvals take too long. Regulatory processes designed for a different era
+                slow down innovation. We have the talent and the science—we need systems that
+                help breakthroughs happen faster, not slower.
               </p>
             </div>
           </div>
@@ -62,33 +62,45 @@ export default function EnergyPage() {
       <section className="py-16 lg:py-24 bg-neutral-50">
         <Container>
           <h2 className="text-3xl md:text-4xl font-display font-bold text-neutral-800 text-center">
-            Our Energy Priorities
+            Our Science & Innovation Priorities
           </h2>
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
-                icon: Sun,
-                title: 'Clean Energy Deployment',
+                icon: FlaskConical,
+                title: 'Support Research',
                 description:
-                  'Make it easy to build solar, wind, and advanced nuclear. Streamline permitting for clean energy projects.',
+                  'Fund basic and applied research that creates breakthroughs in medicine, energy, and technology. Invest in the science that solves tomorrow\'s problems.',
               },
               {
-                icon: Gauge,
-                title: 'Grid Modernization',
+                icon: Pill,
+                title: 'Faster Drug Approvals',
                 description:
-                  'Upgrade our electrical grid to handle more renewable energy and support electrification.',
+                  'Modernize FDA processes so promising treatments reach patients faster without sacrificing safety. Accelerate cures, not bureaucracy.',
               },
               {
-                icon: FileCheck,
-                title: 'Smart Regulation',
+                icon: Lightbulb,
+                title: 'Enable Innovation',
                 description:
-                  'Regulations that enable clean energy deployment rather than creating bureaucratic obstacles.',
+                  'Remove regulatory barriers that slow down beneficial technologies. Make it easier to test, develop, and deploy new solutions.',
+              },
+              {
+                icon: Rocket,
+                title: 'Commercialize Discoveries',
+                description:
+                  'Help research move from the lab to the real world. Support technology transfer and startup formation around federal research.',
+              },
+              {
+                icon: Microscope,
+                title: 'Attract Talent',
+                description:
+                  'Make it easier for the world\'s best scientists and researchers to work here. Streamline visa processes for high-skilled immigrants.',
               },
             ].map((priority) => {
               const Icon = priority.icon;
               return (
                 <div key={priority.title} className="bg-white p-6 rounded-xl shadow-sm">
-                  <Icon className="h-8 w-8 text-amber-500" />
+                  <Icon className="h-8 w-8 text-indigo-500" />
                   <h3 className="mt-4 text-xl font-semibold text-neutral-800">
                     {priority.title}
                   </h3>
@@ -107,11 +119,11 @@ export default function EnergyPage() {
         <Container>
           <div className="text-center">
             <h2 className="text-3xl md:text-4xl font-display font-bold text-neutral-800">
-              Help Us Build Energy Abundance
+              Help Us Accelerate Progress
             </h2>
             <p className="mt-4 text-lg text-neutral-600 max-w-2xl mx-auto">
-              Join our newsletter to stay informed about energy policy developments
-              and opportunities to support abundant, affordable energy.
+              Join our newsletter to stay informed about science policy developments
+              and opportunities to support innovation.
             </p>
             <a
               href="/#newsletter"

@@ -3,6 +3,7 @@
 import { db } from "@/lib/db";
 import { contactSubmissions } from "@/lib/db/schema";
 import { z } from "zod";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 // Zod schema for type-safe validation (prevents SQL injection)
 const contactSchema = z.object({
@@ -20,6 +21,7 @@ const contactSchema = z.object({
   ]),
   subject: z.string().min(5, "Subject must be at least 5 characters"),
   message: z.string().min(20, "Message must be at least 20 characters"),
+  turnstileToken: z.string().optional(),
 });
 
 export type ContactFormState = {
@@ -45,6 +47,7 @@ export async function submitContactForm(
     inquiryType: formData.get("inquiryType"),
     subject: formData.get("subject"),
     message: formData.get("message"),
+    turnstileToken: formData.get("turnstileToken") || "",
   };
 
   const validatedFields = contactSchema.safeParse(rawData);
@@ -57,9 +60,22 @@ export async function submitContactForm(
     };
   }
 
+  const { turnstileToken, ...formFields } = validatedFields.data;
+
+  // Verify Turnstile token (if configured)
+  if (turnstileToken) {
+    const isHuman = await verifyTurnstile(turnstileToken);
+    if (!isHuman) {
+      return {
+        success: false,
+        message: "Verification failed. Please try again.",
+      };
+    }
+  }
+
   try {
     // Insert submission (Drizzle uses parameterized queries - safe from SQL injection)
-    await db.insert(contactSubmissions).values(validatedFields.data);
+    await db.insert(contactSubmissions).values(formFields);
 
     return {
       success: true,

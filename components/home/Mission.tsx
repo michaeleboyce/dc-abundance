@@ -30,7 +30,7 @@ export function Mission() {
               coalition of residents, advocates, and policymakers who believe we can
               do better. We support technology and research that improves lives, and practical
               policy solutions—both local and federal—that expand opportunity and make our
-              capital more affordable, sustainable, and livable for everyone.
+              capital more affordable, prosperous, and livable for everyone.
             </p>
           </div>
         </div>

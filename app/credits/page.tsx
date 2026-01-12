@@ -85,6 +85,17 @@ const imageCredits = [
     licenseUrl: null,
     usage: 'Get Involved page',
   },
+  {
+    image: 'goddard-space-center.jpg',
+    title: 'NASA Goddard Space Flight Center Aerial View',
+    photographer: 'NASA Goddard/Bill Hrybyk',
+    photographerUrl: 'https://www.flickr.com/photos/gsfc/',
+    source: 'Wikimedia Commons',
+    sourceUrl: 'https://commons.wikimedia.org/wiki/File:NASA_Goddard_Space_Flight_Center_Aerial_view_2010_facing_south.jpg',
+    license: 'Public Domain (NASA)',
+    licenseUrl: null,
+    usage: 'Science & Innovation focus area',
+  },
 ];
 
 export default function CreditsPage() {

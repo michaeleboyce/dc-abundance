@@ -1,9 +1,10 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { subscribeToNewsletter, type NewsletterFormState } from '@/lib/actions/newsletter';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { Turnstile } from '@/components/ui/Turnstile';
 import { cn } from '@/lib/utils';
 import { CheckCircle } from 'lucide-react';
 
@@ -20,6 +21,7 @@ const initialState: NewsletterFormState = {
 
 export function NewsletterForm({ variant = 'section', className, dark }: NewsletterFormProps) {
   const [state, formAction, isPending] = useActionState(subscribeToNewsletter, initialState);
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   // Show success state
   if (state.success && state.message) {
@@ -34,18 +36,22 @@ export function NewsletterForm({ variant = 'section', className, dark }: Newslet
   // Compact variant - just email
   if (variant === 'compact') {
     return (
-      <form action={formAction} className={cn('flex gap-2', className)}>
-        <Input
-          name="email"
-          type="email"
-          placeholder="Enter your email"
-          required
-          error={state.errors?.email?.[0]}
-          className="flex-1"
-        />
-        <Button type="submit" isLoading={isPending}>
-          Subscribe
-        </Button>
+      <form action={formAction} className={cn('space-y-3', className)}>
+        <div className="flex gap-2">
+          <Input
+            name="email"
+            type="email"
+            placeholder="Enter your email"
+            required
+            error={state.errors?.email?.[0]}
+            className="flex-1"
+          />
+          <Button type="submit" isLoading={isPending}>
+            Subscribe
+          </Button>
+        </div>
+        <input type="hidden" name="turnstileToken" value={turnstileToken} />
+        <Turnstile onSuccess={setTurnstileToken} />
       </form>
     );
   }
@@ -53,7 +59,7 @@ export function NewsletterForm({ variant = 'section', className, dark }: Newslet
   // Hero variant - horizontal layout on desktop
   if (variant === 'hero') {
     return (
-      <form action={formAction} className={cn('w-full max-w-xl', className)}>
+      <form action={formAction} className={cn('w-full max-w-xl space-y-3', className)}>
         <div className="flex flex-col sm:flex-row gap-3">
           <Input
             name="email"
@@ -67,6 +73,8 @@ export function NewsletterForm({ variant = 'section', className, dark }: Newslet
             Join the Movement
           </Button>
         </div>
+        <input type="hidden" name="turnstileToken" value={turnstileToken} />
+        <Turnstile onSuccess={setTurnstileToken} />
         {state.message && !state.success && (
           <p className="mt-2 text-red-200 text-sm">{state.message}</p>
         )}
@@ -112,6 +120,8 @@ export function NewsletterForm({ variant = 'section', className, dark }: Newslet
         error={state.errors?.zipCode?.[0]}
         dark={dark}
       />
+      <input type="hidden" name="turnstileToken" value={turnstileToken} />
+      <Turnstile onSuccess={setTurnstileToken} />
       {state.message && !state.success && (
         <p className={cn('text-sm', dark ? 'text-red-300' : 'text-red-500')}>{state.message}</p>
       )}

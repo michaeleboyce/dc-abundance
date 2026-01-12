@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'About', href: '/about' },
+  { name: 'Events', href: '/events' },
   { name: 'Focus Areas', href: '/focus-areas' },
   { name: 'Get Involved', href: '/get-involved' },
   { name: 'Contact', href: '/contact' },
