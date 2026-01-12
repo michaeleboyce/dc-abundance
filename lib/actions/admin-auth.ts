@@ -179,7 +179,7 @@ export async function adminLogin(
   };
 }
 
-export { verifySessionToken };
+// verifySessionToken is used internally only
 
 export async function adminLogout(): Promise<void> {
   const cookieStore = await cookies();
