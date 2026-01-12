@@ -55,8 +55,15 @@ export async function subscribeToNewsletter(
 
   const { email, firstName, lastName, zipCode, turnstileToken } = validatedFields.data;
 
-  // Verify Turnstile token (if configured)
-  if (turnstileToken) {
+  // Verify Turnstile token (required when secret is configured)
+  const turnstileConfigured = !!process.env.TURNSTILE_SECRET_KEY;
+  if (turnstileConfigured) {
+    if (!turnstileToken) {
+      return {
+        success: false,
+        message: "Verification required. Please complete the security check.",
+      };
+    }
     const isHuman = await verifyTurnstile(turnstileToken);
     if (!isHuman) {
       return {

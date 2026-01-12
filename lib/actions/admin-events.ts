@@ -93,13 +93,30 @@ const eventSchema = z.object({
   showOwnerEmail: z.boolean().optional().default(false),
 });
 
-// Recurring event schema
+// Recurring event schema with conditional validation for monthly recurrence
 const recurringEventSchema = eventSchema.omit({ slug: true }).extend({
   recurrenceType: z.enum(['weekly', 'monthly']),
   intervalWeeks: z.coerce.number().min(1).max(12).optional(),
   dayOfWeek: z.coerce.number().min(0).max(6).optional(),
   weekOfMonth: z.coerce.number().min(1).max(5).optional(),
   occurrences: z.coerce.number().min(2).max(104),
+}).superRefine((data, ctx) => {
+  if (data.recurrenceType === 'monthly') {
+    if (data.dayOfWeek === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Day of week is required for monthly recurrence',
+        path: ['dayOfWeek'],
+      });
+    }
+    if (data.weekOfMonth === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Week of month is required for monthly recurrence',
+        path: ['weekOfMonth'],
+      });
+    }
+  }
 });
 
 export type EventFormState = {

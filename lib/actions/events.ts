@@ -126,8 +126,15 @@ export async function registerForEvent(
   const normalizedEmail = email.toLowerCase().trim();
   const shouldRegisterForSeries = registerForSeries === "true" && seriesId;
 
-  // Verify Turnstile token (if configured)
-  if (turnstileToken) {
+  // Verify Turnstile token (required when secret is configured)
+  const turnstileConfigured = !!process.env.TURNSTILE_SECRET_KEY;
+  if (turnstileConfigured) {
+    if (!turnstileToken) {
+      return {
+        success: false,
+        message: "Verification required. Please complete the security check.",
+      };
+    }
     const isHuman = await verifyTurnstile(turnstileToken);
     if (!isHuman) {
       return {
@@ -158,6 +165,21 @@ export async function registerForEvent(
     }
 
     const event = eventResult[0];
+
+    // Validate event is open for registration
+    if (event.status !== 'published') {
+      return {
+        success: false,
+        message: "Registration is not open for this event.",
+      };
+    }
+
+    if (new Date(event.eventDate) < new Date()) {
+      return {
+        success: false,
+        message: "This event has already occurred.",
+      };
+    }
 
     // Check if already registered
     const existingRegistration = await db
@@ -339,13 +361,14 @@ async function registerForSeriesEvents(
     };
   }
 
-  // Get all upcoming events in the series
+  // Get all upcoming published events in the series
   const seriesEvents = await db
     .select()
     .from(events)
     .where(
       and(
         eq(events.seriesId, seriesId),
+        eq(events.status, 'published'),
         gt(events.eventDate, new Date())
       )
     )
