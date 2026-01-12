@@ -30,7 +30,7 @@ export function Footer() {
               DC Abundance
             </Link>
             <p className="mt-4 text-neutral-300 text-sm leading-relaxed">
-              Building a more abundant DC—more housing, better transportation, clean energy,
+              Building a more abundant future—more housing, better transportation, clean energy,
               and efficient government for everyone.
             </p>
           </div>
@@ -73,7 +73,7 @@ export function Footer() {
           <div>
             <h3 className="font-semibold text-white mb-4">Join the Movement</h3>
             <p className="text-neutral-300 text-sm mb-4">
-              Get updates on policy wins, events, and ways to help build a more abundant DC.
+              Get updates on policy wins, events, and ways to help build a more abundant future.
             </p>
             <Link
               href="/#newsletter"

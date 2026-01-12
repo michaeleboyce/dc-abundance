@@ -58,7 +58,7 @@ export function PolicyPillars() {
             Our Focus Areas
           </h2>
           <p className="mt-4 text-lg text-neutral-500 max-w-2xl mx-auto">
-            Four pillars for building a more abundant DC
+            Building a more abundant capital
           </p>
         </div>
 

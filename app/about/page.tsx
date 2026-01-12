@@ -18,7 +18,7 @@ export default function AboutPage() {
               About DC Abundance
             </h1>
             <p className="mt-6 text-xl text-neutral-200 leading-relaxed">
-              A cross-partisan coalition working to make Washington, DC more affordable,
+              A cross-partisan coalition working to make our capital more affordable,
               sustainable, and livable for everyone.
             </p>
           </div>
@@ -33,21 +33,22 @@ export default function AboutPage() {
               <h2 className="text-3xl md:text-4xl font-display font-bold text-neutral-800">Our Story</h2>
               <div className="mt-6 space-y-4 text-neutral-600 leading-relaxed">
                 <p>
-                  DC Abundance grew out of a simple observation: Washington, DC has become
+                  DC Abundance grew out of a simple observation: our nation&apos;s capital has become
                   increasingly difficult for regular people to afford. Housing costs have
                   skyrocketed. Metro service has declined. Building anything—even clean
-                  energy projects—takes years of navigating bureaucracy.
+                  energy projects—takes years of navigating bureaucracy. And government agencies
+                  often struggle to deliver the services people need.
                 </p>
                 <p>
-                  But it doesn't have to be this way. Cities around the world have shown
+                  But it doesn&apos;t have to be this way. Cities around the world have shown
                   that with the right policies, you can have abundant housing, excellent
-                  transportation, clean energy, AND a high quality of life. We believe DC can
-                  join them.
+                  transportation, clean energy, AND a high quality of life. We believe our capital can
+                  join them—and that better policy can make abundance possible across the country.
                 </p>
                 <p>
-                  We're not about left or right—we're about building a city that works
+                  We&apos;re not about left or right—we&apos;re about building a future that works
                   for everyone. Our coalition includes people from across the political
-                  spectrum who share a common goal: making DC more abundant.
+                  spectrum who share a common goal: making our capital more abundant.
                 </p>
               </div>
             </div>

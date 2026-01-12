@@ -30,10 +30,10 @@ const waysToHelp = [
     icon: MessageSquare,
     title: 'Contact Your Representatives',
     description:
-      'Make your voice heard by contacting your DC Council member about housing, transportation, energy, and government reform.',
+      'Make your voice heard by contacting your local and federal representatives about housing, transportation, energy, and government reform.',
     action: 'external',
-    link: 'https://dccouncil.gov/council-members/',
-    linkText: 'Find Your Council Member',
+    link: 'https://www.usa.gov/elected-officials',
+    linkText: 'Find Your Representatives',
   },
   {
     icon: Share2,
@@ -46,7 +46,7 @@ const waysToHelp = [
     icon: Users,
     title: 'Attend Events',
     description:
-      'Join community meetings, policy forums, and advocacy events. Meet other DC residents who share your vision for the city.',
+      'Join community meetings, policy forums, and advocacy events. Meet others who share your vision for the region.',
     action: 'contact',
   },
   {
@@ -83,8 +83,8 @@ export default function GetInvolvedPage() {
             Get Involved
           </h1>
           <p className="mt-4 text-xl text-neutral-200 max-w-2xl">
-            Building abundance in DC takes all of us. Here's how you can help
-            create the city we deserve.
+            Building abundance takes all of us. Here's how you can help
+            create the future we deserve.
           </p>
         </Container>
       </section>
@@ -115,7 +115,7 @@ export default function GetInvolvedPage() {
           </h2>
           <p className="mt-4 text-lg text-neutral-600 text-center max-w-2xl mx-auto">
             Whether you have five minutes or five hours, there's a way for you
-            to help build a more abundant DC.
+            to help build a more abundant future.
           </p>
 
           <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
