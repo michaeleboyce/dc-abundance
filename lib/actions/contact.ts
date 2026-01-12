@@ -1,0 +1,75 @@
+"use server";
+
+import { db } from "@/lib/db";
+import { contactSubmissions } from "@/lib/db/schema";
+import { z } from "zod";
+
+// Zod schema for type-safe validation (prevents SQL injection)
+const contactSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  inquiryType: z.enum([
+    "general",
+    "housing",
+    "transit",
+    "energy",
+    "government",
+    "partnership",
+    "media",
+    "volunteer",
+  ]),
+  subject: z.string().min(5, "Subject must be at least 5 characters"),
+  message: z.string().min(20, "Message must be at least 20 characters"),
+});
+
+export type ContactFormState = {
+  success: boolean;
+  message: string;
+  errors?: {
+    name?: string[];
+    email?: string[];
+    inquiryType?: string[];
+    subject?: string[];
+    message?: string[];
+  };
+};
+
+export async function submitContactForm(
+  prevState: ContactFormState,
+  formData: FormData
+): Promise<ContactFormState> {
+  // Extract and validate form data with Zod
+  const rawData = {
+    name: formData.get("name"),
+    email: formData.get("email"),
+    inquiryType: formData.get("inquiryType"),
+    subject: formData.get("subject"),
+    message: formData.get("message"),
+  };
+
+  const validatedFields = contactSchema.safeParse(rawData);
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: "Please fix the errors below.",
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    // Insert submission (Drizzle uses parameterized queries - safe from SQL injection)
+    await db.insert(contactSubmissions).values(validatedFields.data);
+
+    return {
+      success: true,
+      message: "Thanks for reaching out! We'll get back to you soon.",
+    };
+  } catch (error) {
+    console.error("Contact form submission error:", error);
+    return {
+      success: false,
+      message: "Something went wrong. Please try again later.",
+    };
+  }
+}
