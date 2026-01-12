@@ -5,7 +5,7 @@ import { Home, TrendingUp, MapPin, FileCheck } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Housing Abundance',
-  description: 'Learn about DC Abundance\'s housing policy priorities: more homes, zoning reform, and affordable housing for all.',
+  description: 'Housing policy priorities: more homes, zoning reform, and affordable housing for all income levels.',
 };
 
 export default function HousingPage() {
@@ -44,14 +44,14 @@ export default function HousingPage() {
             <h2 className="text-3xl md:text-4xl font-display font-bold text-neutral-800">The Challenge</h2>
             <div className="mt-6 space-y-4 text-lg text-neutral-600 leading-relaxed">
               <p>
-                Washington, DC has a housing crisis. The average renter spends 45% of their
+                Our region has a housing crisis. The average renter spends 45% of their
                 income on housing—far above the 30% threshold considered affordable. Home
-                prices have doubled in the past decade, pushing working families out of the city.
+                prices have doubled in the past decade, pushing working families out.
               </p>
               <p>
-                The root cause? We simply don't have enough homes. Restrictive zoning,
+                The root cause? We simply don&apos;t have enough homes. Restrictive zoning,
                 lengthy permitting processes, and opposition to new development have made
-                it nearly impossible to build the housing DC needs.
+                it nearly impossible to build the housing our communities need.
               </p>
             </div>
           </div>
@@ -111,7 +111,7 @@ export default function HousingPage() {
             </h2>
             <p className="mt-4 text-lg text-neutral-600 max-w-2xl mx-auto">
               Join our newsletter to stay informed about housing policy developments
-              and opportunities to advocate for more homes in DC.
+              and opportunities to advocate for more homes.
             </p>
             <a
               href="/#newsletter"

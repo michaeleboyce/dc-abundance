@@ -5,7 +5,7 @@ import { Train, Clock, Bus, Bike } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Transportation Abundance',
-  description: 'Learn about DC Abundance\'s transportation policy priorities: frequent Metro service, better buses, and multimodal options.',
+  description: 'Transportation policy priorities: frequent Metro service, better buses, and multimodal options for everyone.',
 };
 
 export default function TransportationPage() {
@@ -32,7 +32,7 @@ export default function TransportationPage() {
             Transportation Abundance
           </h1>
           <p className="mt-4 text-xl text-neutral-200 max-w-2xl">
-            World-class transportation for a world-class city.
+            World-class transportation for a world-class capital.
           </p>
         </Container>
       </section>
@@ -49,7 +49,7 @@ export default function TransportationPage() {
                 Meanwhile, traffic congestion has returned to—and exceeded—2019 levels.
               </p>
               <p>
-                DC deserves transportation that matches its ambitions: frequent, reliable, and
+                Our region deserves transportation that matches its ambitions: frequent, reliable, and
                 comfortable service that makes not owning a car the easy choice.
               </p>
             </div>

@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Container } from '@/components/ui/Container';
-import { Building2, Clock, Smartphone, Users } from 'lucide-react';
+import { Building2, Clock, Smartphone, Users, Wrench, FileCheck } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Government That Works',
-  description: 'Learn about DC Abundance\'s government reform priorities: efficient permitting, digital services, and responsive government.',
+  description: 'Government reform priorities: efficient permitting, maintained infrastructure, responsive services, and agencies that actually deliver.',
 };
 
 export default function GovernmentPage() {
@@ -32,7 +32,7 @@ export default function GovernmentPage() {
             Government That Works
           </h1>
           <p className="mt-4 text-xl text-neutral-200 max-w-2xl">
-            Efficient, responsive, and transparent government for DC.
+            Efficient, responsive government that maintains our infrastructure and delivers results.
           </p>
         </Container>
       </section>
@@ -44,13 +44,14 @@ export default function GovernmentPage() {
             <h2 className="text-3xl md:text-4xl font-display font-bold text-neutral-800">The Challenge</h2>
             <div className="mt-6 space-y-4 text-lg text-neutral-600 leading-relaxed">
               <p>
-                Getting anything done in DC often means navigating a maze of agencies,
-                permits, and approvals. Simple projects take months or years. Citizens
-                struggle to access basic services. Good intentions get lost in bureaucracy.
+                Getting anything done often means navigating a maze of agencies,
+                permits, and approvals. Simple projects take months or years. Roads and bridges
+                go unrepaired. Public facilities deteriorate. Good intentions get lost in bureaucracy.
               </p>
               <p>
-                Government should enable progress, not block it. We need processes designed
-                around the people who use them, not the agencies that run them.
+                Government should enable progress, not block it. We need agencies that actually
+                maintain our infrastructure, processes designed around the people who use them,
+                and the capacity to deliver on commitments.
               </p>
             </div>
           </div>
@@ -63,7 +64,7 @@ export default function GovernmentPage() {
           <h2 className="text-3xl md:text-4xl font-display font-bold text-neutral-800 text-center">
             Our Government Priorities
           </h2>
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
                 icon: Clock,
@@ -72,16 +73,22 @@ export default function GovernmentPage() {
                   'Clear timelines, automatic approvals for routine requests, and accountability when deadlines are missed.',
               },
               {
+                icon: Wrench,
+                title: 'Maintained Infrastructure',
+                description:
+                  'Roads, bridges, and public facilities that work. Proactive maintenance, not endless deferred repairs.',
+              },
+              {
                 icon: Smartphone,
                 title: 'Digital-First Services',
                 description:
                   'Modern, user-friendly online services. No more waiting in line or navigating confusing forms.',
               },
               {
-                icon: Users,
-                title: 'Responsive Government',
+                icon: FileCheck,
+                title: 'Agencies That Deliver',
                 description:
-                  'Government that listens to residents and adapts to their needs. Transparent processes and clear communication.',
+                  'Government that meets commitments, measures results, and continuously improves based on what works.',
               },
             ].map((priority) => {
               const Icon = priority.icon;
