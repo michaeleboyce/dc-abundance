@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Turnstile } from '@/components/ui/Turnstile';
 import { cn } from '@/lib/utils';
-import { CheckCircle, Clock } from 'lucide-react';
+import { CheckCircle, Clock, Mail } from 'lucide-react';
 
 interface EventRegistrationFormProps {
   eventId: number;
@@ -25,6 +25,7 @@ export function EventRegistrationForm({ eventId, isFull, className, seriesId, se
   const [state, formAction, isPending] = useActionState(registerForEvent, initialState);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [registerForSeries, setRegisterForSeries] = useState(false);
+  const [subscribeToNewsletter, setSubscribeToNewsletter] = useState(true);
   const [showTurnstile, setShowTurnstile] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -83,6 +84,7 @@ export function EventRegistrationForm({ eventId, isFull, className, seriesId, se
       <input type="hidden" name="eventId" value={eventId} />
       {seriesId && <input type="hidden" name="seriesId" value={seriesId} />}
       <input type="hidden" name="registerForSeries" value={registerForSeries ? "true" : "false"} />
+      <input type="hidden" name="subscribeToNewsletter" value={subscribeToNewsletter ? "true" : "false"} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
@@ -128,6 +130,22 @@ export function EventRegistrationForm({ eventId, isFull, className, seriesId, se
           </label>
         </div>
       )}
+
+      <div className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          id="subscribeToNewsletter"
+          checked={subscribeToNewsletter}
+          onChange={(e) => setSubscribeToNewsletter(e.target.checked)}
+          className="h-4 w-4 mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+        />
+        <label htmlFor="subscribeToNewsletter" className="text-sm text-neutral-600">
+          <span className="flex items-center gap-1.5">
+            <Mail className="h-3.5 w-3.5" />
+            Keep me updated on future events and DC Abundance news
+          </span>
+        </label>
+      </div>
 
       <input type="hidden" name="turnstileToken" value={turnstileToken} />
       {showTurnstile && <Turnstile onSuccess={setTurnstileToken} />}

@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, boolean, pgEnum, integer, uuid, unique, index } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, boolean, pgEnum, integer, uuid, unique, index, json } from 'drizzle-orm/pg-core';
 
 // Enum for contact form inquiry types
 export const inquiryTypeEnum = pgEnum('inquiry_type', [
@@ -12,6 +12,38 @@ export const inquiryTypeEnum = pgEnum('inquiry_type', [
   'volunteer'
 ]);
 
+// Residence options for subscribers
+export const RESIDENCE_OPTIONS = [
+  'Washington, DC',
+  'Arlington County, VA',
+  'Alexandria City, VA',
+  'Fairfax County/City, VA',
+  'Montgomery County, MD',
+  'Prince George\'s County, MD',
+  'Farther out in Virginia',
+  'Farther out in Maryland',
+  'Other',
+] as const;
+
+// Policy interest options
+export const INTEREST_OPTIONS = [
+  'Housing/YIMBY',
+  'Infrastructure/Transportation/Energy',
+  'State Capacity',
+  'Responsive Governance',
+  'Scientific Research/STEM Innovation',
+  'Other',
+] as const;
+
+// Help organize options
+export const HELP_OPTIONS = [
+  'Yes, I can help plan and coordinate events',
+  'Yes, I can help host events as a volunteer',
+  'Yes, I can provide a space for a small gathering like a book club',
+  'Yes, I have access to a space that can accommodate 50+ attendees',
+  'Other',
+] as const;
+
 // Newsletter subscribers table
 export const newsletterSubscribers = pgTable('newsletter_subscribers', {
   id: serial('id').primaryKey(),
@@ -19,6 +51,14 @@ export const newsletterSubscribers = pgTable('newsletter_subscribers', {
   firstName: text('first_name'),
   lastName: text('last_name'),
   zipCode: text('zip_code'),
+  // Enhanced profile fields
+  residence: text('residence'),
+  interests: json('interests').$type<string[]>().default([]),
+  otherInterest: text('other_interest'),
+  helpPreferences: json('help_preferences').$type<string[]>().default([]),
+  otherHelp: text('other_help'),
+  source: text('source').default('website'), // 'website', 'event_registration', etc.
+  // Status fields
   isActive: boolean('is_active').notNull().default(true),
   subscribedAt: timestamp('subscribed_at', { withTimezone: true }).notNull().defaultNow(),
   unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true }),

@@ -1,8 +1,10 @@
 import { getSubscribers } from '@/lib/actions/admin-subscribers';
+import { ExportButton } from '@/components/admin/ExportButton';
 import { Mail, CheckCircle, XCircle } from 'lucide-react';
 
 export default async function SubscribersPage() {
   const subscribers = await getSubscribers();
+  const activeCount = subscribers.filter(s => s.isActive).length;
 
   return (
     <div>
@@ -12,9 +14,10 @@ export default async function SubscribersPage() {
             Newsletter Subscribers
           </h1>
           <p className="text-neutral-600 mt-1">
-            {subscribers.length} total subscribers
+            {activeCount} active / {subscribers.length} total subscribers
           </p>
         </div>
+        <ExportButton endpoint="/api/admin/export-subscribers" />
       </div>
 
       <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">

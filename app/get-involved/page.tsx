@@ -103,6 +103,12 @@ export default function GetInvolvedPage() {
             <div className="mt-8">
               <NewsletterForm variant="section" />
             </div>
+            <p className="mt-6 text-sm text-neutral-500">
+              Want to tell us more about yourself?{' '}
+              <Link href="/join" className="text-primary-600 hover:text-primary-700 font-medium">
+                Complete your full profile
+              </Link>
+            </p>
           </div>
         </Container>
       </section>

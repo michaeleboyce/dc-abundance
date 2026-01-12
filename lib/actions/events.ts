@@ -8,6 +8,7 @@ import { resend, FROM_EMAIL, SITE_URL } from "@/lib/email";
 import { RegistrationConfirmationEmail } from "@/lib/email/templates/registration-confirmation";
 import { WaitlistConfirmationEmail } from "@/lib/email/templates/waitlist-confirmation";
 import { z } from "zod";
+import { quickSubscribe } from "./newsletter";
 
 // Get all published upcoming events
 export async function getUpcomingEvents() {
@@ -85,6 +86,7 @@ const registrationSchema = z.object({
   turnstileToken: z.string().optional(),
   seriesId: z.string().uuid().optional().or(z.literal("")),
   registerForSeries: z.enum(["true", "false"]).optional(),
+  subscribeToNewsletter: z.enum(["true", "false"]).optional(),
 });
 
 export type RegistrationFormState = {
@@ -110,6 +112,7 @@ export async function registerForEvent(
     turnstileToken: formData.get("turnstileToken") || "",
     seriesId: formData.get("seriesId") || "",
     registerForSeries: formData.get("registerForSeries") || "false",
+    subscribeToNewsletter: formData.get("subscribeToNewsletter") || "false",
   };
 
   const validatedFields = registrationSchema.safeParse(rawData);
@@ -122,9 +125,10 @@ export async function registerForEvent(
     };
   }
 
-  const { eventId, email, firstName, lastName, turnstileToken, seriesId, registerForSeries } = validatedFields.data;
+  const { eventId, email, firstName, lastName, turnstileToken, seriesId, registerForSeries, subscribeToNewsletter } = validatedFields.data;
   const normalizedEmail = email.toLowerCase().trim();
   const shouldRegisterForSeries = registerForSeries === "true" && seriesId;
+  const shouldSubscribeToNewsletter = subscribeToNewsletter === "true";
 
   // Verify Turnstile token (required when secret is configured)
   const turnstileConfigured = !!process.env.TURNSTILE_SECRET_KEY;
@@ -146,7 +150,7 @@ export async function registerForEvent(
 
   // Handle series registration
   if (shouldRegisterForSeries) {
-    return await registerForSeriesEvents(seriesId, normalizedEmail, firstName, lastName || null);
+    return await registerForSeriesEvents(seriesId, normalizedEmail, firstName, lastName || null, shouldSubscribeToNewsletter);
   }
 
   try {
@@ -340,6 +344,13 @@ export async function registerForEvent(
       // Don't fail the registration if email fails
     }
 
+    // Subscribe to newsletter if opted in (outside transaction, non-blocking)
+    if (shouldSubscribeToNewsletter) {
+      quickSubscribe(normalizedEmail, firstName, lastName || null, "event_registration").catch((err) => {
+        console.error('Failed to subscribe to newsletter:', err);
+      });
+    }
+
     return {
       success: true,
       message: result.status === 'confirmed'
@@ -369,7 +380,8 @@ async function registerForSeriesEvents(
   seriesId: string,
   email: string,
   firstName: string,
-  lastName: string | null
+  lastName: string | null,
+  subscribeToNewsletter: boolean = false
 ): Promise<RegistrationFormState> {
   try {
     // Get all upcoming published events in the series (read-only, before transaction)
@@ -555,6 +567,13 @@ async function registerForSeriesEvents(
       });
     } catch (emailError) {
       console.error('Failed to send series email:', emailError);
+    }
+
+    // Subscribe to newsletter if opted in (outside transaction, non-blocking)
+    if (subscribeToNewsletter) {
+      quickSubscribe(email, firstName, lastName, "event_series_registration").catch((err) => {
+        console.error('Failed to subscribe to newsletter:', err);
+      });
     }
 
     const message = waitlistedCount > 0
