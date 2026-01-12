@@ -4,11 +4,11 @@ import { Container } from '@/components/ui/Container';
 import { Train, Clock, Bus, Bike } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Transit Abundance',
-  description: 'Learn about DC Abundance\'s transit policy priorities: frequent Metro service, better buses, and multimodal transportation.',
+  title: 'Transportation Abundance',
+  description: 'Learn about DC Abundance\'s transportation policy priorities: frequent Metro service, better buses, and multimodal options.',
 };
 
-export default function TransitPage() {
+export default function TransportationPage() {
   return (
     <>
       {/* Hero */}
@@ -29,10 +29,10 @@ export default function TransitPage() {
             <span className="text-green-300 font-medium">Focus Area</span>
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white">
-            Transit Abundance
+            Transportation Abundance
           </h1>
           <p className="mt-4 text-xl text-neutral-200 max-w-2xl">
-            World-class transit for a world-class city.
+            World-class transportation for a world-class city.
           </p>
         </Container>
       </section>
@@ -49,7 +49,7 @@ export default function TransitPage() {
                 Meanwhile, traffic congestion has returned to—and exceeded—2019 levels.
               </p>
               <p>
-                DC deserves transit that matches its ambitions: frequent, reliable, and
+                DC deserves transportation that matches its ambitions: frequent, reliable, and
                 comfortable service that makes not owning a car the easy choice.
               </p>
             </div>
@@ -61,7 +61,7 @@ export default function TransitPage() {
       <section className="py-16 lg:py-24 bg-neutral-50">
         <Container>
           <h2 className="text-3xl md:text-4xl font-display font-bold text-neutral-800 text-center">
-            Our Transit Priorities
+            Our Transportation Priorities
           </h2>
           <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
@@ -106,10 +106,10 @@ export default function TransitPage() {
         <Container>
           <div className="text-center">
             <h2 className="text-3xl md:text-4xl font-display font-bold text-neutral-800">
-              Help Us Build Transit Abundance
+              Help Us Build Transportation Abundance
             </h2>
             <p className="mt-4 text-lg text-neutral-600 max-w-2xl mx-auto">
-              Join our newsletter to stay informed about transit developments
+              Join our newsletter to stay informed about transportation developments
               and opportunities to advocate for better service.
             </p>
             <a

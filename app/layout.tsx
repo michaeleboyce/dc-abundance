@@ -26,12 +26,12 @@ export const metadata: Metadata = {
     default: "DC Abundance",
     template: "%s | DC Abundance",
   },
-  description: "Build a more abundant DC—more housing, better transit, clean energy, and efficient government for everyone.",
-  keywords: ["DC", "Washington DC", "abundance", "housing", "transit", "energy", "government", "policy"],
+  description: "Build a more abundant DC—more housing, better transportation, clean energy, and efficient government for everyone.",
+  keywords: ["DC", "Washington DC", "abundance", "housing", "transportation", "energy", "government", "policy"],
   authors: [{ name: "DC Abundance" }],
   openGraph: {
     title: "DC Abundance",
-    description: "Build a more abundant DC—more housing, better transit, clean energy, and efficient government for everyone.",
+    description: "Build a more abundant DC—more housing, better transportation, clean energy, and efficient government for everyone.",
     url: "https://dcabundance.org",
     siteName: "DC Abundance",
     locale: "en_US",
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "DC Abundance",
-    description: "Build a more abundant DC—more housing, better transit, clean energy, and efficient government for everyone.",
+    description: "Build a more abundant DC—more housing, better transportation, clean energy, and efficient government for everyone.",
     images: ["/images/union-station.jpg"],
   },
   robots: {

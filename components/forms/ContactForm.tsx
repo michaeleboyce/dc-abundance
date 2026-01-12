@@ -20,7 +20,7 @@ const initialState: ContactFormState = {
 const inquiryTypes = [
   { value: 'general', label: 'General Inquiry' },
   { value: 'housing', label: 'Housing' },
-  { value: 'transit', label: 'Transit' },
+  { value: 'transportation', label: 'Transportation' },
   { value: 'energy', label: 'Energy' },
   { value: 'government', label: 'Government' },
   { value: 'partnership', label: 'Partnership' },

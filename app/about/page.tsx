@@ -41,7 +41,7 @@ export default function AboutPage() {
                 <p>
                   But it doesn't have to be this way. Cities around the world have shown
                   that with the right policies, you can have abundant housing, excellent
-                  transit, clean energy, AND a high quality of life. We believe DC can
+                  transportation, clean energy, AND a high quality of life. We believe DC can
                   join them.
                 </p>
                 <p>
@@ -74,7 +74,7 @@ export default function AboutPage() {
               {
                 title: 'More is Better',
                 description:
-                  'More housing means lower prices. More transit options means less traffic. More clean energy means lower bills. Abundance creates opportunity.',
+                  'More housing means lower prices. More transportation options means less traffic. More clean energy means lower bills. Abundance creates opportunity.',
               },
               {
                 title: 'Process Matters',
@@ -84,7 +84,7 @@ export default function AboutPage() {
               {
                 title: 'Everyone Benefits',
                 description:
-                  'Abundance isn\'t zero-sum. When we build more housing, existing residents benefit from lower prices. When transit improves, everyone gets around faster.',
+                  'Abundance isn\'t zero-sum. When we build more housing, existing residents benefit from lower prices. When transportation improves, everyone gets around faster.',
               },
             ].map((belief) => (
               <div key={belief.title} className="bg-white p-6 rounded-xl shadow-sm">

@@ -32,7 +32,7 @@ export function Hero() {
           DC
         </h1>
         <p className="animate-fade-in-up animation-delay-150 mt-6 max-w-2xl text-lg sm:text-xl md:text-2xl text-white/90 leading-relaxed">
-          More housing. Better transit. Clean energy. Efficient government.
+          More housing. Better transportation. Clean energy. Efficient government.
           <br className="hidden sm:block" />
           <span className="text-accent-300">A city of opportunity for everyone.</span>
         </p>

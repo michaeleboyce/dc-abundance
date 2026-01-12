@@ -6,7 +6,7 @@ import { Home, Train, Zap, Building2, ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Focus Areas',
-  description: 'Explore the four pillars of DC Abundance: Housing, Transit, Energy, and Government.',
+  description: 'Explore the four pillars of DC Abundance: Housing, Transportation, Energy, and Government.',
 };
 
 const focusAreas = [
@@ -21,13 +21,13 @@ const focusAreas = [
     color: 'bg-blue-500',
   },
   {
-    name: 'Transit Abundance',
+    name: 'Transportation Abundance',
     icon: Train,
     image: '/images/u-street-metro.jpg',
     imageAlt: 'U Street Metro station',
     description:
-      'World-class cities need world-class transit. We push for more frequent Metro service, better bus networks, and infrastructure that makes it easy to get around without a car.',
-    href: '/focus-areas/transit',
+      'World-class cities need world-class transportation. We push for more frequent Metro service, better bus networks, and infrastructure that makes it easy to get around without a car.',
+    href: '/focus-areas/transportation',
     color: 'bg-green-500',
   },
   {
@@ -63,7 +63,7 @@ export default function FocusAreasPage() {
               Our Focus Areas
             </h1>
             <p className="mt-6 text-xl text-neutral-200 leading-relaxed">
-              Four pillars for building a more abundant DC: housing, transit, energy, and government.
+              Four pillars for building a more abundant DC: housing, transportation, energy, and government.
             </p>
           </div>
         </Container>

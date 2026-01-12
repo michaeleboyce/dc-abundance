@@ -30,7 +30,7 @@ const waysToHelp = [
     icon: MessageSquare,
     title: 'Contact Your Representatives',
     description:
-      'Make your voice heard by contacting your DC Council member about housing, transit, energy, and government reform.',
+      'Make your voice heard by contacting your DC Council member about housing, transportation, energy, and government reform.',
     action: 'external',
     link: 'https://dccouncil.gov/council-members/',
     linkText: 'Find Your Council Member',
@@ -60,7 +60,7 @@ const waysToHelp = [
     icon: Calendar,
     title: 'Testify at Hearings',
     description:
-      'Speak at DC Council hearings on housing, zoning, transit, and other abundance issues. Your voice matters in the legislative process.',
+      'Speak at DC Council hearings on housing, zoning, transportation, and other abundance issues. Your voice matters in the legislative process.',
     action: 'contact',
   },
 ];

@@ -10,7 +10,7 @@ const navigation = {
   ],
   focus: [
     { name: 'Housing', href: '/focus-areas/housing' },
-    { name: 'Transit', href: '/focus-areas/transit' },
+    { name: 'Transportation', href: '/focus-areas/transportation' },
     { name: 'Energy', href: '/focus-areas/energy' },
     { name: 'Government', href: '/focus-areas/government' },
   ],
@@ -30,7 +30,7 @@ export function Footer() {
               DC Abundance
             </Link>
             <p className="mt-4 text-neutral-300 text-sm leading-relaxed">
-              Building a more abundant DC—more housing, better transit, clean energy,
+              Building a more abundant DC—more housing, better transportation, clean energy,
               and efficient government for everyone.
             </p>
           </div>

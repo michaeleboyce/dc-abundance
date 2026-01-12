@@ -15,14 +15,14 @@ const pillars = [
     statsLabel: 'of income spent on rent by average DC renter',
   },
   {
-    name: 'Transit',
+    name: 'Transportation',
     icon: Train,
     image: '/images/u-street-metro.jpg',
     imageAlt: 'U Street Metro station interior',
-    description: 'World-class public transit. Frequent, reliable Metro service. Better buses and bike infrastructure.',
-    href: '/focus-areas/transit',
+    description: 'World-class public transportation. Frequent, reliable Metro service. Better buses and bike infrastructure.',
+    href: '/focus-areas/transportation',
     stats: '40%',
-    statsLabel: 'of Metro riders rely on transit as primary transportation',
+    statsLabel: 'of Metro riders rely on public transportation',
   },
   {
     name: 'Energy',

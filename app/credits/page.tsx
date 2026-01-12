@@ -39,7 +39,7 @@ const imageCredits = [
     sourceUrl: 'https://commons.wikimedia.org/wiki/File:U_Street_Metro_Station_in_Washington,_DC,_2025.jpg',
     license: 'CC0 1.0 (Public Domain)',
     licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
-    usage: 'Transit focus area',
+    usage: 'Transportation focus area',
   },
   {
     image: 'dulles-airport.jpg',
