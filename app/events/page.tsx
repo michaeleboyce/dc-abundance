@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Container } from '@/components/ui/Container';
 import { EventCard } from '@/components/events/EventCard';
+import { imagePlaceholders } from '@/lib/image-placeholders';
 import { getUpcomingEvents } from '@/lib/actions/events';
 import { db } from '@/lib/db';
 import { eventRegistrations } from '@/lib/db/schema';
@@ -55,6 +56,8 @@ export default async function EventsPage() {
           fill
           priority
           className="object-cover"
+          placeholder="blur"
+          blurDataURL={imagePlaceholders.fourthOfJulyFireworks}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
         <Container className="relative z-10 pb-12">

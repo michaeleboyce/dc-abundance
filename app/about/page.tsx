@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Container } from '@/components/ui/Container';
+import { imagePlaceholders } from '@/lib/image-placeholders';
 
 export const metadata: Metadata = {
   title: 'About',
@@ -18,6 +19,8 @@ export default function AboutPage() {
           fill
           priority
           className="object-cover"
+          placeholder="blur"
+          blurDataURL={imagePlaceholders.easternMarket}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
         <Container className="relative z-10 pb-12">
@@ -64,6 +67,8 @@ export default function AboutPage() {
                 alt="Haupt Garden at the Smithsonian"
                 fill
                 className="object-cover"
+                placeholder="blur"
+                blurDataURL={imagePlaceholders.hauptGarden}
               />
             </div>
           </div>

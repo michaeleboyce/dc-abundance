@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Container } from '@/components/ui/Container';
+import { imagePlaceholders } from '@/lib/image-placeholders';
 import { Home, Train, Zap, Microscope, Building2, ArrowRight } from 'lucide-react';
 
 const pillars = [
@@ -9,6 +10,7 @@ const pillars = [
     icon: Home,
     image: '/images/dc-rowhouses.jpg',
     imageAlt: 'Historic DC rowhouses at sunset in Logan Circle',
+    placeholder: imagePlaceholders.dcRowhouses,
     description: 'More homes in every neighborhood. End exclusionary zoning. Build housing for all income levels.',
     href: '/focus-areas/housing',
     stats: '45%',
@@ -19,6 +21,7 @@ const pillars = [
     icon: Train,
     image: '/images/u-street-metro.jpg',
     imageAlt: 'U Street Metro station interior',
+    placeholder: imagePlaceholders.uStreetMetro,
     description: 'World-class public transportation. Frequent, reliable Metro service. Better buses and bike infrastructure.',
     href: '/focus-areas/transportation',
     stats: '1 in 3',
@@ -29,6 +32,7 @@ const pillars = [
     icon: Zap,
     image: '/images/dulles-airport.jpg',
     imageAlt: 'Dulles Airport at dusk representing modern infrastructure',
+    placeholder: imagePlaceholders.dullesAirport,
     description: 'Clean, cheap, plentiful energy. Solar on every suitable roof. Streamlined permitting for green projects.',
     href: '/focus-areas/energy',
     stats: '100%',
@@ -39,6 +43,7 @@ const pillars = [
     icon: Microscope,
     image: '/images/goddard-space-center.jpg',
     imageAlt: 'NASA Goddard Space Flight Center aerial view',
+    placeholder: imagePlaceholders.goddardSpaceCenter,
     description: 'Accelerate research. Faster drug approvals. Support the science that solves tomorrow\'s problems.',
     href: '/focus-areas/science',
     stats: '10yrs',
@@ -49,6 +54,7 @@ const pillars = [
     icon: Building2,
     image: '/images/library-of-congress.jpg',
     imageAlt: 'Library of Congress interior representing government institutions',
+    placeholder: imagePlaceholders.libraryOfCongress,
     description: 'Efficient permitting. Maintained infrastructure. A government that enables progress.',
     href: '/focus-areas/government',
     stats: '4.5 yrs',
@@ -90,6 +96,8 @@ export function PolicyPillars() {
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    placeholder="blur"
+                    blurDataURL={pillar.placeholder}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-primary-900/80 via-primary-900/20 to-transparent" />
                   <div className="absolute bottom-4 left-4 flex items-center gap-2">

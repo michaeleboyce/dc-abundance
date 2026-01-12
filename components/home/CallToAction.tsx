@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { Container } from '@/components/ui/Container';
 import { NewsletterForm } from '@/components/forms/NewsletterForm';
+import { imagePlaceholders } from '@/lib/image-placeholders';
 
 export function CallToAction() {
   return (
@@ -13,6 +14,8 @@ export function CallToAction() {
           fill
           className="object-cover scale-105"
           sizes="100vw"
+          placeholder="blur"
+          blurDataURL={imagePlaceholders.hauptGarden}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-primary-900/90 via-primary-900/85 to-primary-800/90" />
         {/* Vignette */}

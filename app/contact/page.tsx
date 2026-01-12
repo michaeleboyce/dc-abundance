@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Container } from '@/components/ui/Container';
 import { ContactForm } from '@/components/forms/ContactForm';
+import { imagePlaceholders } from '@/lib/image-placeholders';
 import { Mail, MapPin } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -20,6 +21,8 @@ export default function ContactPage() {
           fill
           priority
           className="object-cover"
+          placeholder="blur"
+          blurDataURL={imagePlaceholders.uStreetNeighborhood}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
         <Container className="relative z-10 pb-10">

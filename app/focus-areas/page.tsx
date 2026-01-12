@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Container } from '@/components/ui/Container';
+import { imagePlaceholders } from '@/lib/image-placeholders';
 import { Home, Train, Zap, Building2, Microscope, ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ const focusAreas = [
     icon: Home,
     image: '/images/dc-rowhouses.jpg',
     imageAlt: 'DC rowhouses at sunset',
+    placeholder: imagePlaceholders.dcRowhouses,
     description:
       'DC needs more homes at every price point. We advocate for zoning reform, streamlined permitting, and policies that make it easier to build housing in every neighborhood.',
     href: '/focus-areas/housing',
@@ -25,6 +27,7 @@ const focusAreas = [
     icon: Train,
     image: '/images/u-street-metro.jpg',
     imageAlt: 'U Street Metro station',
+    placeholder: imagePlaceholders.uStreetMetro,
     description:
       'World-class cities need world-class transportation. We push for more frequent Metro service, better bus networks, and infrastructure that makes it easy to get around without a car.',
     href: '/focus-areas/transportation',
@@ -35,6 +38,7 @@ const focusAreas = [
     icon: Zap,
     image: '/images/dulles-airport.jpg',
     imageAlt: 'Dulles Airport at dusk',
+    placeholder: imagePlaceholders.dullesAirport,
     description:
       'Clean energy should be cheap and plentiful. We support streamlined permitting for solar and wind projects, grid modernization, and policies that reduce energy costs.',
     href: '/focus-areas/energy',
@@ -45,6 +49,7 @@ const focusAreas = [
     icon: Microscope,
     image: '/images/goddard-space-center.jpg',
     imageAlt: 'NASA Goddard Space Flight Center aerial view',
+    placeholder: imagePlaceholders.goddardSpaceCenter,
     description:
       'Accelerate research and get life-saving treatments to people faster. Support the science that solves tomorrow\'s problems and remove barriers to beneficial technologies.',
     href: '/focus-areas/science',
@@ -55,6 +60,7 @@ const focusAreas = [
     icon: Building2,
     image: '/images/library-of-congress.jpg',
     imageAlt: 'Library of Congress interior',
+    placeholder: imagePlaceholders.libraryOfCongress,
     description:
       'Government should enable progress, not block it. We advocate for faster permitting, well-maintained roads and bridges, responsive services, and agencies that actually deliver for residents.',
     href: '/focus-areas/government',
@@ -73,6 +79,8 @@ export default function FocusAreasPage() {
           fill
           priority
           className="object-cover"
+          placeholder="blur"
+          blurDataURL={imagePlaceholders.lincolnMemorialSunset}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
         <Container className="relative z-10 pb-12">
@@ -127,6 +135,8 @@ export default function FocusAreasPage() {
                       alt={area.imageAlt}
                       fill
                       className="object-cover"
+                      placeholder="blur"
+                      blurDataURL={area.placeholder}
                     />
                   </div>
                 </div>

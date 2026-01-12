@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { ChevronDown } from 'lucide-react';
 import { NewsletterForm } from '@/components/forms/NewsletterForm';
+import { imagePlaceholders } from '@/lib/image-placeholders';
 
 export function Hero() {
   return (
@@ -14,6 +15,8 @@ export function Hero() {
           priority
           className="object-cover scale-105"
           sizes="100vw"
+          placeholder="blur"
+          blurDataURL={imagePlaceholders.unionStation}
         />
         {/* Cinematic gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-primary-900/70 via-primary-900/50 to-primary-900/80" />
