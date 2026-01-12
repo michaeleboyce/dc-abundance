@@ -527,7 +527,7 @@ async function registerForSeriesEvents(
       };
     }
 
-    const { confirmedCount, waitlistedCount } = result;
+    const { confirmedCount = 0, waitlistedCount = 0 } = result;
 
     // Send email OUTSIDE transaction to avoid holding locks
     const firstEvent = seriesEvents[0];
