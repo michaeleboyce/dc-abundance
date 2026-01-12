@@ -371,179 +371,214 @@ async function registerForSeriesEvents(
   firstName: string,
   lastName: string | null
 ): Promise<RegistrationFormState> {
-  // Check if already registered for series
-  const existingSeriesReg = await db
-    .select()
-    .from(seriesRegistrations)
-    .where(
-      and(
-        eq(seriesRegistrations.seriesId, seriesId),
-        eq(seriesRegistrations.email, email)
-      )
-    )
-    .limit(1);
-
-  if (existingSeriesReg[0] && !existingSeriesReg[0].cancelledAt) {
-    return {
-      success: true,
-      message: "You're already registered for this event series!",
-      status: 'confirmed',
-    };
-  }
-
-  // Get all upcoming published events in the series
-  const seriesEvents = await db
-    .select()
-    .from(events)
-    .where(
-      and(
-        eq(events.seriesId, seriesId),
-        eq(events.status, 'published'),
-        gt(events.eventDate, new Date())
-      )
-    )
-    .orderBy(asc(events.eventDate));
-
-  if (seriesEvents.length === 0) {
-    return {
-      success: false,
-      message: "No upcoming events found in this series.",
-    };
-  }
-
-  // Create or update series registration
-  if (existingSeriesReg[0]?.cancelledAt) {
-    await db
-      .update(seriesRegistrations)
-      .set({
-        firstName,
-        lastName,
-        registeredAt: new Date(),
-        cancelledAt: null,
-      })
-      .where(eq(seriesRegistrations.id, existingSeriesReg[0].id));
-  } else {
-    await db.insert(seriesRegistrations).values({
-      seriesId,
-      email,
-      firstName,
-      lastName,
-    });
-  }
-
-  // Register for each event in the series
-  let confirmedCount = 0;
-  let waitlistedCount = 0;
-
-  for (const event of seriesEvents) {
-    // Check if already registered for this specific event
-    const existingReg = await db
+  try {
+    // Get all upcoming published events in the series (read-only, before transaction)
+    const seriesEvents = await db
       .select()
-      .from(eventRegistrations)
+      .from(events)
       .where(
         and(
-          eq(eventRegistrations.eventId, event.id),
-          eq(eventRegistrations.email, email)
+          eq(events.seriesId, seriesId),
+          eq(events.status, 'published'),
+          gt(events.eventDate, new Date())
         )
       )
-      .limit(1);
+      .orderBy(asc(events.eventDate));
 
-    if (existingReg[0] && existingReg[0].status !== 'cancelled') {
-      if (existingReg[0].status === 'confirmed') confirmedCount++;
-      else waitlistedCount++;
-      continue;
+    if (seriesEvents.length === 0) {
+      return {
+        success: false,
+        message: "No upcoming events found in this series.",
+      };
     }
 
-    // Get current confirmed count for this event
-    const [currentConfirmed] = await db
-      .select({ count: count() })
-      .from(eventRegistrations)
-      .where(
-        and(
-          eq(eventRegistrations.eventId, event.id),
-          eq(eventRegistrations.status, 'confirmed')
-        )
+    // Use transaction with row locking to prevent race conditions
+    const result = await db.transaction(async (tx) => {
+      // Check for existing series registration with lock
+      const existingSeriesRows = await tx.execute(
+        sql`SELECT * FROM series_registrations
+            WHERE series_id = ${seriesId} AND email = ${email}
+            FOR UPDATE`
       );
+      const existingSeriesReg = existingSeriesRows.rows[0] as {
+        id: number;
+        cancelled_at: Date | null;
+      } | undefined;
 
-    const eventIsFull = (currentConfirmed?.count || 0) >= event.maxAttendees;
-    const status = eventIsFull ? 'waitlisted' : 'confirmed';
+      if (existingSeriesReg && !existingSeriesReg.cancelled_at) {
+        return {
+          alreadyRegistered: true,
+        };
+      }
 
-    let waitlistPosition: number | null = null;
-    if (status === 'waitlisted') {
-      const [maxPos] = await db
-        .select({ maxPos: max(eventRegistrations.waitlistPosition) })
-        .from(eventRegistrations)
-        .where(
-          and(
-            eq(eventRegistrations.eventId, event.id),
-            eq(eventRegistrations.status, 'waitlisted')
-          )
-        );
-      waitlistPosition = (maxPos?.maxPos || 0) + 1;
-    }
-
-    if (existingReg[0]?.status === 'cancelled') {
-      await db
-        .update(eventRegistrations)
-        .set({
-          status,
+      // Create or update series registration
+      if (existingSeriesReg?.cancelled_at) {
+        await tx
+          .update(seriesRegistrations)
+          .set({
+            firstName,
+            lastName,
+            registeredAt: new Date(),
+            cancelledAt: null,
+          })
+          .where(eq(seriesRegistrations.id, existingSeriesReg.id));
+      } else {
+        await tx.insert(seriesRegistrations).values({
+          seriesId,
+          email,
           firstName,
           lastName,
-          registeredAt: new Date(),
-          cancelledAt: null,
-          waitlistPosition,
-        })
-        .where(eq(eventRegistrations.id, existingReg[0].id));
-    } else {
-      await db.insert(eventRegistrations).values({
-        eventId: event.id,
-        email,
-        firstName,
-        lastName,
-        status,
-        waitlistPosition,
-      });
+        });
+      }
+
+      // Register for each event in the series
+      let confirmedCount = 0;
+      let waitlistedCount = 0;
+
+      for (const event of seriesEvents) {
+        // Lock the event row to prevent overbooking
+        await tx.execute(sql`SELECT id FROM events WHERE id = ${event.id} FOR UPDATE`);
+
+        // Check if already registered for this specific event (with lock)
+        const existingRegRows = await tx.execute(
+          sql`SELECT * FROM event_registrations
+              WHERE event_id = ${event.id} AND email = ${email}
+              FOR UPDATE`
+        );
+        const existingReg = existingRegRows.rows[0] as {
+          id: number;
+          status: string;
+        } | undefined;
+
+        if (existingReg && existingReg.status !== 'cancelled') {
+          if (existingReg.status === 'confirmed') confirmedCount++;
+          else waitlistedCount++;
+          continue;
+        }
+
+        // Get current confirmed count for this event (within lock)
+        const [currentConfirmed] = await tx
+          .select({ count: count() })
+          .from(eventRegistrations)
+          .where(
+            and(
+              eq(eventRegistrations.eventId, event.id),
+              eq(eventRegistrations.status, 'confirmed')
+            )
+          );
+
+        const eventIsFull = (currentConfirmed?.count || 0) >= event.maxAttendees;
+        const status = eventIsFull ? 'waitlisted' : 'confirmed';
+
+        let waitlistPosition: number | null = null;
+        if (status === 'waitlisted') {
+          const [maxPos] = await tx
+            .select({ maxPos: max(eventRegistrations.waitlistPosition) })
+            .from(eventRegistrations)
+            .where(
+              and(
+                eq(eventRegistrations.eventId, event.id),
+                eq(eventRegistrations.status, 'waitlisted')
+              )
+            );
+          waitlistPosition = (maxPos?.maxPos || 0) + 1;
+        }
+
+        if (existingReg?.status === 'cancelled') {
+          await tx
+            .update(eventRegistrations)
+            .set({
+              status,
+              firstName,
+              lastName,
+              registeredAt: new Date(),
+              cancelledAt: null,
+              waitlistPosition,
+            })
+            .where(eq(eventRegistrations.id, existingReg.id));
+        } else {
+          await tx.insert(eventRegistrations).values({
+            eventId: event.id,
+            email,
+            firstName,
+            lastName,
+            status,
+            waitlistPosition,
+          });
+        }
+
+        if (status === 'confirmed') confirmedCount++;
+        else waitlistedCount++;
+      }
+
+      return {
+        alreadyRegistered: false,
+        confirmedCount,
+        waitlistedCount,
+      };
+    });
+
+    // Handle already registered case
+    if (result.alreadyRegistered) {
+      return {
+        success: true,
+        message: "You're already registered for this event series!",
+        status: 'confirmed',
+      };
     }
 
-    if (status === 'confirmed') confirmedCount++;
-    else waitlistedCount++;
+    const { confirmedCount, waitlistedCount } = result;
+
+    // Send email OUTSIDE transaction to avoid holding locks
+    const firstEvent = seriesEvents[0];
+    try {
+      const eventDate = firstEvent.eventDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+
+      await resend.emails.send({
+        from: FROM_EMAIL,
+        to: email,
+        subject: `You're registered for ${seriesEvents.length} events: ${firstEvent.title}`,
+        react: RegistrationConfirmationEmail({
+          firstName,
+          eventTitle: `${firstEvent.title} (and ${seriesEvents.length - 1} more)`,
+          eventDate: `Starting ${eventDate}`,
+          location: firstEvent.location,
+          cancelUrl: `${SITE_URL}/events`, // Link to events page for series
+        }),
+      });
+    } catch (emailError) {
+      console.error('Failed to send series email:', emailError);
+    }
+
+    const message = waitlistedCount > 0
+      ? `Registered for ${confirmedCount} events, waitlisted for ${waitlistedCount}. Check your email for details.`
+      : `You're registered for all ${confirmedCount} events! Check your email for confirmation.`;
+
+    return {
+      success: true,
+      message,
+      status: waitlistedCount > 0 ? 'waitlisted' : 'confirmed',
+    };
+  } catch (error: unknown) {
+    // Handle unique constraint violation (race condition fallback)
+    if (error instanceof Error && error.message.includes('unique_series_email')) {
+      return {
+        success: true,
+        message: "You're already registered for this event series!",
+        status: 'confirmed',
+      };
+    }
+    console.error("Series registration error:", error);
+    return {
+      success: false,
+      message: "Something went wrong. Please try again later.",
+    };
   }
-
-  // Send a single summary email for series registration
-  const firstEvent = seriesEvents[0];
-  try {
-    const eventDate = firstEvent.eventDate.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to: email,
-      subject: `You're registered for ${seriesEvents.length} events: ${firstEvent.title}`,
-      react: RegistrationConfirmationEmail({
-        firstName,
-        eventTitle: `${firstEvent.title} (and ${seriesEvents.length - 1} more)`,
-        eventDate: `Starting ${eventDate}`,
-        location: firstEvent.location,
-        cancelUrl: `${SITE_URL}/events`, // Link to events page for series
-      }),
-    });
-  } catch (emailError) {
-    console.error('Failed to send series email:', emailError);
-  }
-
-  const message = waitlistedCount > 0
-    ? `Registered for ${confirmedCount} events, waitlisted for ${waitlistedCount}. Check your email for details.`
-    : `You're registered for all ${confirmedCount} events! Check your email for confirmation.`;
-
-  return {
-    success: true,
-    message,
-    status: waitlistedCount > 0 ? 'waitlisted' : 'confirmed',
-  };
 }

@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, boolean, pgEnum, integer, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, boolean, pgEnum, integer, uuid, unique, index } from 'drizzle-orm/pg-core';
 
 // Enum for contact form inquiry types
 export const inquiryTypeEnum = pgEnum('inquiry_type', [
@@ -88,7 +88,11 @@ export const eventRegistrations = pgTable('event_registrations', {
   registeredAt: timestamp('registered_at', { withTimezone: true }).notNull().defaultNow(),
   cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
   waitlistPosition: integer('waitlist_position'),
-});
+}, (table) => ({
+  uniqueEventEmail: unique('unique_event_email').on(table.eventId, table.email),
+  eventStatusIdx: index('idx_registrations_event_status').on(table.eventId, table.status),
+  eventWaitlistIdx: index('idx_registrations_event_waitlist').on(table.eventId, table.status, table.waitlistPosition),
+}));
 
 // Series registrations table (for registering to an entire series)
 export const seriesRegistrations = pgTable('series_registrations', {
@@ -99,7 +103,9 @@ export const seriesRegistrations = pgTable('series_registrations', {
   lastName: text('last_name'),
   registeredAt: timestamp('registered_at', { withTimezone: true }).notNull().defaultNow(),
   cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
-});
+}, (table) => ({
+  uniqueSeriesEmail: unique('unique_series_email').on(table.seriesId, table.email),
+}));
 
 // Type exports for type-safe queries
 export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;

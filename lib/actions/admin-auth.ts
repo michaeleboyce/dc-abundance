@@ -139,8 +139,15 @@ export async function adminLogin(
 
   const { password, turnstileToken } = validatedFields.data;
 
-  // Verify Turnstile if token provided (required in production)
-  if (turnstileToken) {
+  // Verify Turnstile token (required when secret is configured)
+  const turnstileConfigured = !!process.env.TURNSTILE_SECRET_KEY;
+  if (turnstileConfigured) {
+    if (!turnstileToken) {
+      return {
+        success: false,
+        message: "Verification required. Please complete the security check.",
+      };
+    }
     const isValidCaptcha = await verifyTurnstile(turnstileToken);
     if (!isValidCaptcha) {
       return {

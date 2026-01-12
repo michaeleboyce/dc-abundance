@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { events, eventRegistrations, eventSeries } from "@/lib/db/schema";
-import { eq, asc, and, count, inArray } from "drizzle-orm";
+import { eq, asc, and, count, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -412,83 +412,108 @@ export async function deleteEvent(id: number): Promise<void> {
 
 // Cancel a registration and promote from waitlist
 export async function cancelRegistration(registrationId: number): Promise<void> {
-  const [registration] = await db
-    .select()
-    .from(eventRegistrations)
-    .where(eq(eventRegistrations.id, registrationId))
-    .limit(1);
+  // Use transaction with row locking to prevent race conditions
+  const result = await db.transaction(async (tx) => {
+    // Lock the registration row to prevent concurrent modifications
+    const registrationRows = await tx.execute(
+      sql`SELECT * FROM event_registrations WHERE id = ${registrationId} FOR UPDATE`
+    );
+    const registration = registrationRows.rows[0] as {
+      id: number;
+      event_id: number;
+      email: string;
+      first_name: string;
+      status: string;
+    } | undefined;
 
-  if (!registration) return;
+    if (!registration) return null;
 
-  // Mark as cancelled
-  await db
-    .update(eventRegistrations)
-    .set({
-      status: 'cancelled',
-      cancelledAt: new Date(),
-    })
-    .where(eq(eventRegistrations.id, registrationId));
+    // Mark as cancelled
+    await tx
+      .update(eventRegistrations)
+      .set({
+        status: 'cancelled',
+        cancelledAt: new Date(),
+      })
+      .where(eq(eventRegistrations.id, registrationId));
 
-  // If was confirmed, promote first waitlisted person
-  if (registration.status === 'confirmed') {
-    const [nextInLine] = await db
-      .select()
-      .from(eventRegistrations)
-      .where(
-        and(
-          eq(eventRegistrations.eventId, registration.eventId),
-          eq(eventRegistrations.status, 'waitlisted')
-        )
-      )
-      .orderBy(asc(eventRegistrations.waitlistPosition))
-      .limit(1);
+    // If was confirmed, promote first waitlisted person
+    if (registration.status === 'confirmed') {
+      // Lock the event row to prevent concurrent promotions
+      await tx.execute(sql`SELECT id FROM events WHERE id = ${registration.event_id} FOR UPDATE`);
 
-    if (nextInLine) {
-      await db
-        .update(eventRegistrations)
-        .set({
-          status: 'confirmed',
-          waitlistPosition: null,
-        })
-        .where(eq(eventRegistrations.id, nextInLine.id));
+      // Get first person on waitlist (with lock)
+      const waitlistRows = await tx.execute(
+        sql`SELECT * FROM event_registrations
+            WHERE event_id = ${registration.event_id}
+            AND status = 'waitlisted'
+            ORDER BY waitlist_position ASC
+            LIMIT 1
+            FOR UPDATE`
+      );
+      const nextInLine = waitlistRows.rows[0] as {
+        id: number;
+        email: string;
+        first_name: string;
+        confirmation_token: string;
+      } | undefined;
 
-      // Get event details for email
-      const [event] = await db
-        .select()
-        .from(events)
-        .where(eq(events.id, registration.eventId))
-        .limit(1);
+      if (nextInLine) {
+        // Promote to confirmed
+        await tx
+          .update(eventRegistrations)
+          .set({
+            status: 'confirmed',
+            waitlistPosition: null,
+          })
+          .where(eq(eventRegistrations.id, nextInLine.id));
 
-      if (event) {
-        // Send promotion email
-        const eventDate = event.eventDate.toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-        });
+        // Get event details for email (no lock needed, just reading)
+        const [event] = await tx
+          .select()
+          .from(events)
+          .where(eq(events.id, registration.event_id))
+          .limit(1);
 
-        const cancelUrl = `${SITE_URL}/api/cancel-registration?token=${nextInLine.confirmationToken}`;
-
-        try {
-          await resend.emails.send({
-            from: FROM_EMAIL,
-            to: nextInLine.email,
-            subject: `A spot opened up: ${event.title}`,
-            react: WaitlistPromotedEmail({
-              firstName: nextInLine.firstName,
-              eventTitle: event.title,
-              eventDate,
-              location: event.location,
-              cancelUrl,
-            }),
-          });
-        } catch (emailError) {
-          console.error('Failed to send promotion email:', emailError);
-        }
+        return {
+          promoted: nextInLine,
+          event,
+        };
       }
+    }
+
+    return null;
+  });
+
+  // Send email OUTSIDE transaction to avoid holding locks
+  if (result?.promoted && result?.event) {
+    const { promoted, event } = result;
+    const eventDate = event.eventDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+
+    const cancelUrl = `${SITE_URL}/api/cancel-registration?token=${promoted.confirmation_token}`;
+
+    try {
+      await resend.emails.send({
+        from: FROM_EMAIL,
+        to: promoted.email,
+        subject: `A spot opened up: ${event.title}`,
+        react: WaitlistPromotedEmail({
+          firstName: promoted.first_name,
+          eventTitle: event.title,
+          eventDate,
+          location: event.location,
+          cancelUrl,
+        }),
+      });
+    } catch (emailError) {
+      console.error('Failed to send promotion email:', emailError);
     }
   }
 
