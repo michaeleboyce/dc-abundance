@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Container } from '@/components/ui/Container';
-import { NewsletterForm } from '@/components/forms/NewsletterForm';
 import {
   Mail,
   Users,
@@ -101,14 +100,13 @@ export default function GetInvolvedPage() {
               to make a difference.
             </p>
             <div className="mt-8">
-              <NewsletterForm variant="section" />
-            </div>
-            <p className="mt-6 text-sm text-neutral-500">
-              Want to tell us more about yourself?{' '}
-              <Link href="/join" className="text-primary-600 hover:text-primary-700 font-medium">
-                Complete your full profile
+              <Link
+                href="/join"
+                className="inline-block bg-gradient-to-b from-accent-400 to-accent-500 hover:from-accent-500 hover:to-accent-600 text-neutral-900 font-semibold px-8 py-3.5 rounded-lg text-lg transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-accent-500/25"
+              >
+                Sign Up
               </Link>
-            </p>
+            </div>
           </div>
         </Container>
       </section>

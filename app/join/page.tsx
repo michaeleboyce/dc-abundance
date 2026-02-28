@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Container } from '@/components/ui/Container';
-import { EnhancedNewsletterForm } from '@/components/forms/EnhancedNewsletterForm';
 
 export const metadata: Metadata = {
   title: 'Join DC Abundance',
@@ -31,17 +30,18 @@ export default function JoinPage() {
         </Container>
       </section>
 
-      {/* Form Section */}
+      {/* Airtable Form Section */}
       <section className="py-16 lg:py-24">
         <Container>
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-8 md:p-10">
-              <EnhancedNewsletterForm source="join_page" />
-            </div>
-            <p className="mt-6 text-center text-sm text-neutral-500">
-              By joining, you'll receive our newsletter with policy updates, event announcements, and opportunities to take action.
-              You can unsubscribe at any time.
-            </p>
+            <iframe
+              className="airtable-embed"
+              src="https://airtable.com/embed/appjclNNp23HMw9Yd/paggDayO6dxdNl37R/form"
+              frameBorder="0"
+              width="100%"
+              height="533"
+              style={{ background: 'transparent', border: '1px solid #ccc' }}
+            />
           </div>
         </Container>
       </section>

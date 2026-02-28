@@ -77,7 +77,7 @@ export function Footer() {
               Get updates on policy wins, events, and ways to help build a more abundant future.
             </p>
             <Link
-              href="/#newsletter"
+              href="/join"
               className="inline-block bg-gradient-to-b from-accent-400 to-accent-500 hover:from-accent-500 hover:to-accent-600 text-neutral-900 font-semibold px-5 py-2.5 rounded-lg transition-all text-sm hover:shadow-md hover:shadow-accent-500/25"
             >
               Sign Up

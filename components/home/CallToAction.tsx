@@ -1,6 +1,6 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { Container } from '@/components/ui/Container';
-import { NewsletterForm } from '@/components/forms/NewsletterForm';
 import { imagePlaceholders } from '@/lib/image-placeholders';
 
 export function CallToAction() {
@@ -38,12 +38,13 @@ export function CallToAction() {
           </p>
 
           <div className="mt-10 flex justify-center">
-            <NewsletterForm variant="section" className="text-left" dark />
+            <Link
+              href="/join"
+              className="inline-block bg-gradient-to-b from-accent-400 to-accent-500 hover:from-accent-500 hover:to-accent-600 text-neutral-900 font-semibold px-8 py-3.5 rounded-lg text-lg transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-accent-500/25"
+            >
+              Join the Movement
+            </Link>
           </div>
-
-          <p className="mt-8 text-sm text-neutral-400/80 tracking-wide">
-            We respect your privacy. Unsubscribe at any time.
-          </p>
         </div>
       </Container>
     </section>

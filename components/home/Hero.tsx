@@ -1,6 +1,6 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
-import { NewsletterForm } from '@/components/forms/NewsletterForm';
 import { imagePlaceholders } from '@/lib/image-placeholders';
 
 export function Hero() {
@@ -40,9 +40,14 @@ export function Hero() {
           <span className="text-accent-300">A capital of opportunity for everyone.</span>
         </p>
 
-        {/* Newsletter Form */}
-        <div className="animate-fade-in-up animation-delay-300 mt-10 w-full max-w-xl px-4">
-          <NewsletterForm variant="hero" />
+        {/* CTA Button */}
+        <div className="animate-fade-in-up animation-delay-300 mt-10">
+          <Link
+            href="/join"
+            className="inline-block bg-gradient-to-b from-accent-400 to-accent-500 hover:from-accent-500 hover:to-accent-600 text-neutral-900 font-semibold px-8 py-3.5 rounded-lg text-lg transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-accent-500/25"
+          >
+            Join the Movement
+          </Link>
         </div>
 
         {/* Social proof */}

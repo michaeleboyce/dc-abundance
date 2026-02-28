@@ -40,7 +40,7 @@ export function Header() {
               </Link>
             ))}
             <Link
-              href="/#newsletter"
+              href="/join"
               className="bg-gradient-to-b from-accent-400 to-accent-500 hover:from-accent-500 hover:to-accent-600 text-neutral-900 font-semibold px-5 py-2.5 rounded-lg transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:shadow-accent-500/25"
             >
               Join Us
@@ -106,7 +106,7 @@ export function Header() {
               </Link>
             ))}
             <Link
-              href="/#newsletter"
+              href="/join"
               className={cn(
                 'mt-3 bg-gradient-to-b from-accent-400 to-accent-500 hover:from-accent-500 hover:to-accent-600 text-neutral-900 font-semibold px-5 py-3 rounded-lg text-center transition-all duration-200',
                 'transform',
